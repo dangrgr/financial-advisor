@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>January 2026 — Family Financial Dashboard</title>
+<style>
+  :root {
+    --green: #16a34a; --red: #dc2626; --amber: #d97706;
+    --bg: #f8fafc; --card: #ffffff; --text: #1e293b; --muted: #64748b;
+    --border: #e2e8f0; --accent: #3b82f6;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; padding: 24px; max-width: 1100px; margin: 0 auto; }
+
+  /* Header */
+  .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 8px; }
+  .header h1 { font-size: 1.75rem; font-weight: 700; }
+  .header .meta { color: var(--muted); font-size: 0.85rem; }
+  .badge { display: inline-block; background: var(--accent); color: white; padding: 2px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
+  .partial-badge { background: var(--amber); }
+
+  /* Progress Meters (replaces scorecard) */
+  .meters { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 24px; }
+  .meter { margin-bottom: 20px; }
+  .meter:last-child { margin-bottom: 0; }
+  .meter-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; flex-wrap: wrap; gap: 4px; }
+  .meter-title { font-size: 0.85rem; font-weight: 600; }
+  .meter-stats { font-size: 0.8rem; color: var(--muted); }
+  .meter-bar { height: 24px; background: #e2e8f0; border-radius: 12px; overflow: visible; position: relative; }
+  .meter-fill { height: 100%; border-radius: 12px; transition: width 0.5s ease; }
+  .meter-fill-green { background: linear-gradient(90deg, #86efac, #22c55e); }
+  .meter-fill-amber { background: linear-gradient(90deg, #fde68a, #f59e0b); }
+  .meter-fill-red { background: linear-gradient(90deg, #fca5a5, #ef4444); }
+  .meter-fill-blue { background: linear-gradient(90deg, #93c5fd, #3b82f6); }
+  .meter-fill-blue-dark { background: linear-gradient(90deg, #60a5fa, #2563eb); }
+  .meter-fill-blue-light { background: linear-gradient(90deg, #bfdbfe, #93c5fd); }
+  .meter-fill-amber-dark { background: linear-gradient(90deg, #d97706, #b45309); }
+  .meter-marker { position: absolute; top: -2px; bottom: -2px; width: 3px; background: var(--accent); border-radius: 2px; z-index: 1; }
+  .meter-labels { display: flex; justify-content: space-between; margin-top: 6px; font-size: 0.7rem; color: var(--muted); }
+  .meter-labels .meter-label-marker { color: var(--accent); font-weight: 600; }
+  .positive { color: var(--green); }
+  .negative { color: var(--red); }
+  .neutral { color: var(--text); }
+
+  /* Stars & Streaks */
+  .cat-star { color: #eab308; font-size: 0.85rem; }
+  .cat-check { color: var(--green); font-size: 0.8rem; }
+  .cat-streak { display: inline-block; background: #fef9c3; color: #a16207; font-size: 0.65rem; font-weight: 700; padding: 1px 5px; border-radius: 8px; margin-left: 2px; vertical-align: middle; }
+
+  /* Income celebration */
+  .income-callout { display: flex; align-items: center; gap: 8px; background: linear-gradient(135deg, #fdf4ff 0%, #fae8ff 100%); border: 1px solid #e9d5ff; border-radius: 8px; padding: 8px 14px; margin-top: 8px; font-size: 0.8rem; color: #7c3aed; }
+  .income-callout strong { color: #6d28d9; }
+
+  /* Spending Runway Card */
+  .runway-card {
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    border-radius: 12px; padding: 24px; margin-bottom: 24px; color: #f1f5f9;
+  }
+  .runway-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .runway-header h2 { font-size: 1.15rem; font-weight: 600; color: #f1f5f9; margin: 0; }
+  .runway-days { font-size: 0.9rem; color: #94a3b8; font-weight: 500; }
+  .runway-bar-container { margin-bottom: 20px; }
+  .runway-bar-bg { height: 12px; background: #475569; border-radius: 6px; overflow: hidden; }
+  .runway-bar-fill { height: 100%; border-radius: 6px; transition: width 0.5s ease; }
+  .runway-bar-labels { display: flex; justify-content: space-between; margin-top: 6px; font-size: 0.75rem; color: #64748b; }
+  .runway-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .runway-metric { text-align: center; }
+  .runway-metric-label { font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .runway-metric-value { font-size: 1.4rem; font-weight: 700; color: #f1f5f9; }
+
+  /* Bill Tracker */
+  .bill-tracker-section { }
+  .bill-tracker-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 16px; flex-wrap: wrap; gap: 8px; }
+  .bill-tracker-header h2 { margin: 0; }
+  .bill-tracker-meta { font-size: 0.8rem; color: var(--muted); }
+  .bill-row-posted { background: #f0fdf4; }
+  .bill-row-expected { background: #fffbeb; }
+  .bill-row-late { background: #fef2f2; }
+  .bill-posted { color: var(--green); font-weight: 600; font-size: 0.85rem; }
+  .bill-expected { color: var(--amber); font-weight: 600; font-size: 0.85rem; }
+  .bill-late { color: var(--red); font-weight: 600; font-size: 0.85rem; }
+  .bill-upcoming { color: var(--muted); font-size: 0.85rem; }
+  .bill-range { color: var(--muted); font-size: 0.8rem; }
+  .bill-summary-row { border-top: 2px solid var(--border); }
+  .bill-summary-row td { padding-top: 12px; }
+
+  /* Sections */
+  .section { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 24px; }
+  .section h2 { font-size: 1.15rem; font-weight: 600; margin-bottom: 16px; }
+
+  /* Budget Performance Table */
+  .perf-table { font-size: 0.85rem; }
+  .perf-table th { font-size: 0.7rem; }
+  .perf-cat { white-space: nowrap; font-weight: 500; min-width: 140px; }
+  .perf-bar-cell { width: 35%; min-width: 180px; padding-right: 16px !important; }
+  .perf-bar-container { width: 100%; }
+  .perf-bar-bg { height: 18px; background: #f1f5f9; border-radius: 4px; position: relative; overflow: visible; }
+  .perf-bar-fill { height: 100%; border-radius: 4px; transition: width 0.3s ease; }
+  .perf-bar-fill.perf-good { background: #86efac; }
+  .perf-bar-fill.perf-caution { background: #fde68a; }
+  .perf-bar-fill.perf-over { background: #fca5a5; }
+  .perf-bar-overflow { position: absolute; top: 0; height: 100%; background: #ef4444; border-radius: 0 4px 4px 0; opacity: 0.7; }
+  .perf-budget-line { position: absolute; right: 0; top: -2px; bottom: -2px; width: 2px; background: var(--accent); border-radius: 1px; }
+  .perf-prev-marker { position: absolute; top: -1px; bottom: -1px; width: 2px; background: #94a3b8; border-radius: 1px; z-index: 1; }
+  .perf-prev-marker::after { content: ''; position: absolute; top: -4px; left: -3px; width: 8px; height: 8px; background: #94a3b8; border-radius: 50%; }
+  .perf-actual { font-weight: 600; white-space: nowrap; }
+  .perf-budget { color: var(--muted); white-space: nowrap; }
+  .perf-var-over { color: var(--red); font-weight: 600; font-size: 0.8rem; }
+  .perf-var-under { color: var(--green); font-size: 0.8rem; }
+  .perf-mom-label { font-weight: 400; color: var(--muted); font-size: 0.6rem; text-transform: none; letter-spacing: 0; }
+  .mom-up { color: var(--red); font-size: 0.8rem; white-space: nowrap; }
+  .mom-down { color: var(--green); font-size: 0.8rem; white-space: nowrap; }
+  .mom-flat { color: var(--muted); }
+  .perf-total-row td { border-top: 2px solid var(--border); padding-top: 10px; }
+
+  /* Tables */
+  table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+  th { text-align: left; padding: 8px 12px; border-bottom: 2px solid var(--border); color: var(--muted); font-weight: 600; font-size: 0.8rem; text-transform: uppercase; }
+  td { padding: 8px 12px; border-bottom: 1px solid var(--border); }
+  tr:last-child td { border-bottom: none; }
+  tr:nth-child(even):not([class]) { background: #f8fafc; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .arrow-up { color: var(--red); }
+  .arrow-down { color: var(--green); }
+  .arrow-flat { color: var(--muted); }
+
+  /* Bonus Pool */
+  .pool-overview { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 16px; }
+  .pool-card { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 16px; text-align: center; }
+  .pool-card-label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .pool-card-value { font-size: 1.3rem; font-weight: 700; }
+  .pool-card-sub { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+  .pool-dec-purchases { font-size: 0.8rem; color: var(--muted); margin-bottom: 8px; }
+  .pool-explainer { font-size: 0.85rem; color: var(--muted); margin-bottom: 12px; }
+  .pool-perf-table { font-size: 0.85rem; }
+  .pool-perf-table th { font-size: 0.7rem; }
+  .pool-spend-cell { font-size: 0.8rem; max-width: 250px; }
+  .pool-spend-desc { color: var(--muted); font-size: 0.75rem; }
+  .pool-callout { border-radius: 8px; padding: 12px 16px; margin: 16px 0; font-size: 0.9rem; }
+  .pool-callout-win { background: #f0fdf4; border-left: 4px solid var(--green); color: var(--text); }
+  .pool-callout-watch { background: #fef2f2; border-left: 4px solid var(--red); color: var(--text); }
+  .pool-savings-note { background: #eff6ff; border-radius: 8px; padding: 12px 16px; font-size: 0.85rem; color: var(--text); margin-bottom: 12px; }
+  .pool-upcoming { font-size: 0.8rem; color: var(--muted); }
+
+  /* Collapsible sections */
+  details.collapsible { margin-bottom: 0; }
+  details.collapsible > summary { cursor: pointer; list-style: none; display: flex; align-items: center; gap: 8px; }
+  details.collapsible > summary::-webkit-details-marker { display: none; }
+  details.collapsible > summary::before { content: '\25b6'; font-size: 0.7rem; color: var(--muted); transition: transform 0.2s; }
+  details.collapsible[open] > summary::before { transform: rotate(90deg); }
+
+  /* Liquidity cards */
+  .tier-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+  .tier-card { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+  .tier-card h3 { font-size: 0.95rem; margin-bottom: 10px; }
+  .tier-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 0.88rem; }
+  .tier-row .tier-label { color: var(--muted); }
+  .tier-row .tier-value { font-weight: 600; }
+
+  /* Narrative & recommendations */
+  .narrative { font-size: 0.95rem; line-height: 1.7; }
+  .narrative p { margin-bottom: 12px; }
+  .rec-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
+  .rec-card { border-radius: 10px; padding: 16px; font-size: 0.9rem; }
+  .rec-watch { background: #fef2f2; border-left: 4px solid var(--red); }
+  .rec-win { background: #f0fdf4; border-left: 4px solid var(--green); }
+  .rec-info { background: #eff6ff; border-left: 4px solid var(--accent); }
+  .rec-card strong { display: block; margin-bottom: 4px; }
+
+  /* Callout box (partial month, informational) */
+  .callout-info {
+    background: #eff6ff; border-left: 4px solid var(--accent);
+    border-radius: 0 8px 8px 0; padding: 12px 16px;
+    font-size: 0.9rem; margin-bottom: 16px; color: var(--text);
+  }
+
+  /* Print */
+  @media print {
+    body { padding: 0; }
+    .section { break-inside: avoid; }
+    .runway-card { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div>
+    <h1>January 2026 Financial Dashboard</h1>
+    <span class="meta">Generated March 16, 2026</span>
+  </div>
+  <div>
+    <span class="badge ">Balanced</span>
+  </div>
+</div>
+
+<!-- Progress Meters -->
+<div class="meters">
+  <div class="meter">
+    <div class="meter-header">
+      <span class="meter-title">January Spending: $10,998.51</span>
+      <span class="meter-stats" style="color: var(--green);">$2,616.41 under budget</span>
+    </div>
+    <div class="meter-bar" style="height: 26px;">
+      <div class="meter-fill meter-fill-green" style="width: 80.8%; border-radius: 12px 0 0 12px; display: flex; align-items: center; padding-left: 10px;"><span style="color:#065f46; font-size:10px; font-weight:700;">$10,998.51 spent</span></div>
+      <div class="meter-fill meter-fill-amber" style="width: 0.0%; border-radius: 0; margin-left: 80.8%; position: absolute; top: 0; height: 100%;"></div>
+      
+      <div class="meter-marker" style="left: 86.1%;"></div>
+    </div>
+    <div style="position:relative; height:16px; margin-top:4px; font-size:10px; font-weight:600;">
+      <span style="position:absolute; left:86.1%; color:var(--accent);">Income: $11,716.29</span>
+    </div>
+  </div>
+  <div class="meter">
+    <div class="meter-header">
+      <span class="meter-title">Bonus Pool (of $77,340.57)</span>
+    </div>
+    <div style="position: relative;">
+      <div style="height: 26px;"><div style="display: flex; height: 100%; width: 34.9%; border-radius: 10px 0 0 10px; overflow: hidden;"><div style="flex: 1; height: 100%; background: linear-gradient(90deg, #60a5fa, #2563eb); display: flex; align-items: center; padding-left: 10px;"><span style="color: #bfdbfe; font-size: 10px; font-weight: 700;">$26,998.01 spendable</span></div></div></div>
+      <div style="position: absolute; left: 34.9%; top: -2px; height: calc(100% + 4px); width: 3px; background: #1e293b; border-radius: 2px; z-index: 2;"></div>
+      <div style="height: 26px;"><div style="margin-left: 34.9%; margin-right: 15.0%; height: 100%; background: linear-gradient(90deg, #bfdbfe, #93c5fd); display: flex; align-items: center; justify-content: center;"><span style="color: #1e40af; font-size: 9px; font-weight: 600;">$38,779.05 reserved</span></div></div>
+      <div style="position: absolute; left: 85.0%; top: -2px; height: calc(100% + 4px); width: 3px; background: #1e293b; border-radius: 2px; z-index: 2;"></div>
+      <div style="height: 26px;"><div style="display: flex; height: 100%; margin-left: 85.0%; border-radius: 0 10px 10px 0; overflow: hidden;"><div style="flex: 0 0 74.2%; height: 100%; background: linear-gradient(90deg, #fde68a, #f59e0b); display: flex; align-items: center; justify-content: center;"><span style="color: #92400e; font-size: 9px; font-weight: 600;">$11,563.51 spent</span></div><div style="flex: 0 0 25.8%; height: 100%; background: linear-gradient(90deg, #d97706, #b45309);"></div></div></div>
+    </div>
+    <div class="meter-labels" style="position: relative; height: 1.2rem; margin-top: 4px;">
+      
+      
+    </div>
+    <div style="display: flex; flex-wrap: wrap; margin-top: 4px;"><span style="display: inline-block; background: var(--amber); color: #fff; padding: 2px 10px; border-radius: 12px; font-size: 0.78rem; margin: 2px 4px;">$2,981.53: Bonus spend, Car repair (exceptional)</span></div>
+  </div>
+  <div class="income-callout">💜 <strong>+$916.29 extra income added to bonus pool</strong> — Good job!</div>
+</div>
+
+<!-- Budget Performance (actuals vs budget with inline progress bars + MoM) -->
+<div class="section">
+  <details class="collapsible" open>
+    <summary><h2 style="display:inline; margin:0;">Budget Performance</h2></summary>
+    <div style="margin-top: 12px;"><table class="perf-table"><thead><tr><th>Category</th><th>Budget Usage</th><th>Actual</th><th>Budget</th><th>vs Budget</th><th>vs Last Month</th></tr></thead><tbody><tr><td class="perf-cat">Bills & Utilities <span class="cat-star">★</span></td><td class="perf-bar-cell"><div class="perf-bar-container"><div class="perf-bar-bg"><div class="perf-bar-fill perf-caution" style="width: 77.5%;"></div><div class="perf-budget-line"></div></div></div></td><td class="num perf-actual">$4,001.12</td><td class="num perf-budget">$5,161.98</td><td class="num perf-var"><span class="perf-var-under">-22%</span></td><td class="num perf-mom"></td></tr>
+<tr><td class="perf-cat">Shopping <span class="cat-star">★</span></td><td class="perf-bar-cell"><div class="perf-bar-container"><div class="perf-bar-bg"><div class="perf-bar-fill perf-good" style="width: 44.7%;"></div><div class="perf-budget-line"></div></div></div></td><td class="num perf-actual">$833.37</td><td class="num perf-budget">$1,863.29</td><td class="num perf-var"><span class="perf-var-under">-55%</span></td><td class="num perf-mom"></td></tr>
+<tr><td class="perf-cat">Groceries </td><td class="perf-bar-cell"><div class="perf-bar-container"><div class="perf-bar-bg"><div class="perf-bar-fill perf-over" style="width: 100.0%;"></div><div class="perf-bar-overflow" style="left: 100%; width: 10.5%;"></div><div class="perf-budget-line"></div></div></div></td><td class="num perf-actual">$1,450.67</td><td class="num perf-budget">$1,312.91</td><td class="num perf-var"><span class="perf-var-over">+10%</span></td><td class="num perf-mom"></td></tr>
+<tr><td class="perf-cat">Dining & Drinks <span class="cat-star">★</span></td><td class="perf-bar-cell"><div class="perf-bar-container"><div class="perf-bar-bg"><div class="perf-bar-fill perf-good" style="width: 72.8%;"></div><div class="perf-budget-line"></div></div></div></td><td class="num perf-actual">$883.95</td><td class="num perf-budget">$1,214.88</td><td class="num perf-var"><span class="perf-var-under">-27%</span></td><td class="num perf-mom"></td></tr>
+<tr><td class="perf-cat">Education </td><td class="perf-bar-cell"><div class="perf-bar-container"><div class="perf-bar-bg"><div class="perf-bar-fill perf-over" style="width: 100.0%;"></div><div class="perf-bar-overflow" style="left: 100%; width: 19.4%;"></div><div class="perf-budget-line"></div></div></div></td><td class="num perf-actual">$725.00</td><td class="num perf-budget">$607.35</td><td class="num perf-var"><span class="perf-var-over">+19%</span></td><td class="num perf-mom"></td></tr>
+<tr><td class="perf-cat">Pets <span class="cat-star">★</span></td><td class="perf-bar-cell"><div class="perf-bar-container"><div class="perf-bar-bg"><div class="perf-bar-fill perf-caution" style="width: 77.5%;"></div><div class="perf-budget-line"></div></div></div></td><td class="num perf-actual">$394.11</td><td class="num perf-budget">$508.83</td><td class="num perf-var"><span class="perf-var-under">-23%</span></td><td class="num perf-mom"></td></tr>
+<tr><td class="perf-cat">Health & Wellness </td><td class="perf-bar-cell"><div class="perf-bar-container"><div class="perf-bar-bg"><div class="perf-bar-fill perf-over" style="width: 100.0%;"></div><div class="perf-bar-overflow" style="left: 100%; width: 6.8%;"></div><div class="perf-budget-line"></div></div></div></td><td class="num perf-actual">$437.98</td><td class="num perf-budget">$410.13</td><td class="num perf-var"><span class="perf-var-over">+7%</span></td><td class="num perf-mom"></td></tr>
+<tr><td class="perf-cat">Vehicle Maintenance </td><td class="perf-bar-cell"><div class="perf-bar-container"><div class="perf-bar-bg"><div class="perf-bar-fill perf-over" style="width: 100.0%;"></div><div class="perf-bar-overflow" style="left: 100%; width: 25.0%;"></div><div class="perf-budget-line"></div></div></div></td><td class="num perf-actual">$500.00</td><td class="num perf-budget">$400.00</td><td class="num perf-var"><span class="perf-var-over">+25%</span></td><td class="num perf-mom"></td></tr>
+<tr><td class="perf-cat">Medical </td><td class="perf-bar-cell"><div class="perf-bar-container"><div class="perf-bar-bg"><div class="perf-bar-fill perf-over" style="width: 100.0%;"></div><div class="perf-bar-overflow" style="left: 100%; width: 50.0%;"></div><div class="perf-budget-line"></div></div></div></td><td class="num perf-actual">$613.41</td><td class="num perf-budget">$345.87</td><td class="num perf-var"><span class="perf-var-over">+77%</span></td><td class="num perf-mom"></td></tr>
+<tr><td class="perf-cat">Auto & Transport <span class="cat-star">★</span></td><td class="perf-bar-cell"><div class="perf-bar-container"><div class="perf-bar-bg"><div class="perf-bar-fill perf-good" style="width: 31.3%;"></div><div class="perf-budget-line"></div></div></div></td><td class="num perf-actual">$99.52</td><td class="num perf-budget">$317.61</td><td class="num perf-var"><span class="perf-var-under">-69%</span></td><td class="num perf-mom"></td></tr>
+<tr><td class="perf-cat">Personal Care <span class="cat-star">★</span></td><td class="perf-bar-cell"><div class="perf-bar-container"><div class="perf-bar-bg"><div class="perf-bar-fill perf-caution" style="width: 96.5%;"></div><div class="perf-budget-line"></div></div></div></td><td class="num perf-actual">$231.59</td><td class="num perf-budget">$239.96</td><td class="num perf-var"><span class="perf-var-under">-3%</span></td><td class="num perf-mom"></td></tr>
+<tr><td class="perf-cat">Kids Activities <span class="cat-star">★</span></td><td class="perf-bar-cell"><div class="perf-bar-container"><div class="perf-bar-bg"><div class="perf-bar-fill perf-caution" style="width: 94.0%;"></div><div class="perf-budget-line"></div></div></div></td><td class="num perf-actual">$215.55</td><td class="num perf-budget">$229.28</td><td class="num perf-var"><span class="perf-var-under">-6%</span></td><td class="num perf-mom"></td></tr>
+<tr><td class="perf-cat">Home & Garden <span class="cat-star">★</span></td><td class="perf-bar-cell"><div class="perf-bar-container"><div class="perf-bar-bg"><div class="perf-bar-fill perf-good" style="width: 69.7%;"></div><div class="perf-budget-line"></div></div></div></td><td class="num perf-actual">$156.62</td><td class="num perf-budget">$224.81</td><td class="num perf-var"><span class="perf-var-under">-30%</span></td><td class="num perf-mom"></td></tr>
+<tr><td class="perf-cat">Uncategorized </td><td class="perf-bar-cell"><div class="perf-bar-container"><div class="perf-bar-bg"><div class="perf-bar-fill perf-good" style="width: 0.0%;"></div><div class="perf-budget-line"></div></div></div></td><td class="num perf-actual">$0.00</td><td class="num perf-budget">$197.63</td><td class="num perf-var"><span class="perf-var-under">-100%</span></td><td class="num perf-mom"></td></tr>
+<tr><td class="perf-cat">Entertainment & Rec. <span class="cat-star">★</span></td><td class="perf-bar-cell"><div class="perf-bar-container"><div class="perf-bar-bg"><div class="perf-bar-fill perf-good" style="width: 43.8%;"></div><div class="perf-budget-line"></div></div></div></td><td class="num perf-actual">$83.14</td><td class="num perf-budget">$189.75</td><td class="num perf-var"><span class="perf-var-under">-56%</span></td><td class="num perf-mom"></td></tr>
+<tr><td class="perf-cat">Software & Tech </td><td class="perf-bar-cell"><div class="perf-bar-container"><div class="perf-bar-bg"><div class="perf-bar-fill perf-over" style="width: 100.0%;"></div><div class="perf-bar-overflow" style="left: 100%; width: 12.3%;"></div><div class="perf-budget-line"></div></div></div></td><td class="num perf-actual">$164.17</td><td class="num perf-budget">$146.18</td><td class="num perf-var"><span class="perf-var-over">+12%</span></td><td class="num perf-mom"></td></tr>
+<tr><td class="perf-cat">Cash & Checks <span class="cat-star">★</span></td><td class="perf-bar-cell"><div class="perf-bar-container"><div class="perf-bar-bg"><div class="perf-bar-fill perf-good" style="width: 4.4%;"></div><div class="perf-budget-line"></div></div></div></td><td class="num perf-actual">$4.00</td><td class="num perf-budget">$91.42</td><td class="num perf-var"><span class="perf-var-under">-96%</span></td><td class="num perf-mom"></td></tr>
+<tr><td class="perf-cat">Charitable Donations <span class="cat-star">★</span></td><td class="perf-bar-cell"><div class="perf-bar-container"><div class="perf-bar-bg"><div class="perf-bar-fill perf-good" style="width: 3.9%;"></div><div class="perf-budget-line"></div></div></div></td><td class="num perf-actual">$3.00</td><td class="num perf-budget">$77.81</td><td class="num perf-var"><span class="perf-var-under">-96%</span></td><td class="num perf-mom"></td></tr>
+<tr><td class="perf-cat">Taxes </td><td class="perf-bar-cell"><div class="perf-bar-container"><div class="perf-bar-bg"><div class="perf-bar-fill perf-good" style="width: 0.0%;"></div><div class="perf-budget-line"></div></div></div></td><td class="num perf-actual">$0.00</td><td class="num perf-budget">$73.08</td><td class="num perf-var"><span class="perf-var-under">-100%</span></td><td class="num perf-mom"></td></tr>
+<tr><td class="perf-cat">Legal </td><td class="perf-bar-cell"><div class="perf-bar-container"><div class="perf-bar-bg"><div class="perf-bar-fill perf-good" style="width: 0.0%;"></div><div class="perf-budget-line"></div></div></div></td><td class="num perf-actual">$0.00</td><td class="num perf-budget">$1.73</td><td class="num perf-var"><span class="perf-var-under">-100%</span></td><td class="num perf-mom"></td></tr>
+<tr><td class="perf-cat">Fees </td><td class="perf-bar-cell"><div class="perf-bar-container"><div class="perf-bar-bg"><div class="perf-bar-fill perf-over" style="width: 100.0%;"></div><div class="perf-bar-overflow" style="left: 100%; width: 50.0%;"></div><div class="perf-budget-line"></div></div></div></td><td class="num perf-actual">$87.00</td><td class="num perf-budget">$0.38</td><td class="num perf-var"><span class="perf-var-over">+22618%</span></td><td class="num perf-mom"></td></tr>
+<tr class="perf-total-row"><td><strong>Total</strong></td><td></td><td class="num"><strong>$10,884.20</strong></td><td class="num"><strong>$13,614.92</strong></td><td class="num"><span class="perf-var-under">-20%</span></td><td class="num"></td></tr></tbody></table></div>
+  </details>
+</div>
+
+<!-- Bill Tracker (requires --csv) -->
+<div class="section bill-tracker-section">
+  <details class="collapsible" open>
+    <summary>
+      <h2 style="display:inline; margin:0;">Bill Tracker — January 2026</h2>
+      <span class="bill-tracker-meta" style="margin-left: auto;">As of Day 31 · 18 of 18 recurring bills posted</span>
+    </summary>
+  <table style="margin-top: 12px;">
+    <thead>
+      <tr>
+        <th>Bill</th>
+        <th>Expected Window</th>
+        <th>Expected</th>
+        <th>Actual</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="bill-row-posted"><td>AWS</td><td class="num">Day 2–4</td><td class="num">$1.15</td><td class="num">$1.20</td><td><span class="bill-posted">✓ Posted</span></td></tr><tr class="bill-row-posted"><td>JPMORGAN CHASE</td><td class="num">Day 3–29</td><td class="num">$2,421.92 <span class="bill-range">($334.53–$2,601.68)</span></td><td class="num">$2,421.92</td><td><span class="bill-posted">✓ Posted</span></td></tr><tr class="bill-row-posted"><td>PLANET FITNESS</td><td class="num">Day 3–19</td><td class="num">$15.00 <span class="bill-range">($1.00–$49.00)</span></td><td class="num">$30.00</td><td><span class="bill-posted">✓ Posted</span></td></tr><tr class="bill-row-posted"><td>USAA INSURANCE PAYMENT</td><td class="num">Day 5–6</td><td class="num">$270.44 <span class="bill-range">($260.15–$276.89)</span></td><td class="num">$114.16</td><td><span class="bill-posted">✓ Posted</span></td></tr><tr class="bill-row-posted"><td>XCEL ENERGY-PSCO</td><td class="num">Day 5–10</td><td class="num">$118.22 <span class="bill-range">($46.76–$345.45)</span></td><td class="num">$210.79</td><td><span class="bill-posted">✓ Posted</span></td></tr><tr class="bill-row-posted"><td>COMPASSION INT'L</td><td class="num">Day 9–11</td><td class="num">$38.00</td><td class="num">$38.00</td><td><span class="bill-posted">✓ Posted</span></td></tr><tr class="bill-row-posted"><td>NETFLIX</td><td class="num">Day 10–13</td><td class="num">$8.19 <span class="bill-range">($7.16–$18.44)</span></td><td class="num">$27.65</td><td><span class="bill-posted">✓ Posted</span></td></tr><tr class="bill-row-posted"><td>LONGMONT DAIRY FARMS</td><td class="num">Day 12–14</td><td class="num">$59.67 <span class="bill-range">($39.14–$107.37)</span></td><td class="num">$59.67</td><td><span class="bill-posted">✓ Posted</span></td></tr><tr class="bill-row-posted"><td>VGI 529 ACH</td><td class="num">Day 13–15</td><td class="num">$500.00</td><td class="num">$500.00</td><td><span class="bill-posted">✓ Posted</span></td></tr><tr class="bill-row-posted"><td>NELNET LOAN SERV</td><td class="num">Day 15–18</td><td class="num">$237.72</td><td class="num">$237.72</td><td><span class="bill-posted">✓ Posted</span></td></tr><tr class="bill-row-posted"><td>TRUPANION</td><td class="num">Day 15–16</td><td class="num">$50.59 <span class="bill-range">($50.59–$64.63)</span></td><td class="num">$64.63</td><td><span class="bill-posted">✓ Posted</span></td></tr><tr class="bill-row-posted"><td>TING INTERNET</td><td class="num">Day 16–17</td><td class="num">$93.77</td><td class="num">$93.77</td><td><span class="bill-posted">✓ Posted</span></td></tr><tr class="bill-row-posted"><td>SPI*DENVER WATER</td><td class="num">Day 17–20</td><td class="num">$38.41 <span class="bill-range">($30.70–$249.54)</span></td><td class="num">$27.66</td><td><span class="bill-posted">✓ Posted</span></td></tr><tr class="bill-row-posted"><td>DISNEY PLUS</td><td class="num">Day 17–18</td><td class="num">$11.97</td><td class="num">$14.17</td><td><span class="bill-posted">✓ Posted</span></td></tr><tr class="bill-row-posted"><td>SUNRUN</td><td class="num">Day 18–21</td><td class="num">$105.65</td><td class="num">$108.72</td><td><span class="bill-posted">✓ Posted</span></td></tr><tr class="bill-row-posted"><td>SIMPLISAFE</td><td class="num">Day 19–20</td><td class="num">$31.99</td><td class="num">$32.99</td><td><span class="bill-posted">✓ Posted</span></td></tr><tr class="bill-row-posted"><td>USAA.COM PAY EXT</td><td class="num">Day 22–24</td><td class="num">$63.32</td><td class="num">$63.32</td><td><span class="bill-posted">✓ Posted</span></td></tr><tr class="bill-row-posted"><td>ROCKET MONEY</td><td class="num">Day 24–28</td><td class="num">$5.00</td><td class="num">$5.00</td><td><span class="bill-posted">✓ Posted</span></td></tr><tr class="bill-summary-row"><td colspan="2"><strong>Remaining Obligations</strong></td><td class="num"><strong>$0.00</strong></td><td colspan="2"></td></tr>
+    </tbody>
+  </table>
+  </details>
+</div>
+
+<!-- Bonus Pool -->
+<div class="section">
+  <details class="collapsible" open>
+    <summary><h2 style="display:inline; margin:0;">Bonus Pool (of $77,340.57)</h2></summary>
+    <div class="pool-overview">
+  <div class="pool-card">
+    <div class="pool-card-label">Spendable</div>
+    <div class="pool-card-value" style="color: var(--green);">$26,998.01</div>
+  </div>
+  <div class="pool-card">
+    <div class="pool-card-label">Reserved</div>
+    <div class="pool-card-value">$38,779.05</div>
+    <div class="pool-card-sub">gap coverage + IRS</div>
+  </div>
+  <div class="pool-card">
+    <div class="pool-card-label">Spent</div>
+    <div class="pool-card-value">$11,563.51</div>
+  </div>
+</div>
+
+<h3 style="margin-top: 20px; font-size: 0.95rem;">Monthly Performance vs Budget</h3>
+<p class="pool-explainer">Budget plans for a <strong>$2,814.92/month</strong> gap between income and spending. When we spend less, the difference stays in the pool.</p>
+
+<table class="pool-perf-table">
+  <thead><tr>
+    <th>Month</th><th>Planned Gap</th><th>Actual Gap</th><th>Saved</th><th>Bonus Spend</th>
+  </tr></thead>
+  <tbody><tr><td>Dec</td><td class="num">—</td><td class="num">—</td><td class="num ">—</td><td class="num">$5,767.06</td></tr><tr><td></td><td colspan="4" style="font-size: 0.75rem; color: var(--muted); padding-top: 0; padding-bottom: 6px;">Parking, Travel, Mattress</td></tr><tr><td>Jan</td><td class="num">$2,814.92</td><td class="num">$199.64</td><td class="num positive"><strong>+$2,615.28</strong></td><td class="num">$5,596.81</td></tr><tr><td></td><td colspan="4" style="font-size: 0.75rem; color: var(--muted); padding-top: 0; padding-bottom: 6px;">Car Repair</td></tr><tr class="perf-total-row"><td><strong>Total</strong></td><td class="num"><strong>$2,814.92</strong></td><td class="num"><strong>$199.64</strong></td><td class="num positive"><strong>+$2,615.28</strong></td><td class="num"><strong>$11,363.87</strong></td></tr></tbody>
+</table>
+
+<div class="pool-callout pool-callout-win">You've kept <strong>$2,615.28</strong> more in the bonus pool than planned by spending under budget!</div>
+  </details>
+</div>
+
+<!-- Liquidity Tiers -->
+<div class="section">
+  <details class="collapsible" open>
+    <summary><h2 style="display:inline; margin:0;">Liquidity Picture</h2></summary>
+    <div class="tier-grid" style="margin-top: 12px;">
+      <div class="pool-overview">
+  <div class="pool-card">
+    <div class="pool-card-label">Cash</div>
+    <div class="pool-card-value">$105,951.06</div>
+    <div class="pool-card-sub">savings + checking + pool</div>
+  </div>
+  <div class="pool-card">
+    <div class="pool-card-label">Brokerage</div>
+    <div class="pool-card-value">$147,480.00</div>
+    <div class="pool-card-sub">$40,000.00 backstop + $107,480.00 growth</div>
+  </div>
+  <div class="pool-card">
+    <div class="pool-card-label">Retirement</div>
+    <div class="pool-card-value">~$1,000,000.00</div>
+    <div class="pool-card-sub">not in spending plan</div>
+  </div>
+</div><table style="width: 100%; margin-top: 12px; font-size: 0.85rem;">
+  <tbody>
+    <tr><td style="color: var(--muted);">Savings</td><td class="num">$80,773.00</td><td style="color: var(--muted); font-size: 0.78rem; padding-left: 8px;">above floor: $39,083.00</td></tr>
+    <tr><td style="color: var(--muted);">Checking (net)</td><td class="num">$9,401.00</td><td></td></tr>
+    <tr><td style="color: var(--muted);">Bonus Pool</td><td class="num">$15,777.06</td><td></td></tr>
+  </tbody>
+</table>
+    </div>
+  </details>
+</div>
+
+<!-- Narrative -->
+<div class="section">
+  <h2>How We Did</h2>
+  <div class="narrative">
+    <p>Overall spending came in <strong>$2,730.72 under budget</strong> across budgeted categories. Nice work keeping things in check.</p>
+<p>Categories to watch: <strong>Medical</strong> ($267.54 over), <strong>Groceries</strong> ($137.76 over), <strong>Education</strong> ($117.65 over).</p>
+<p>Wins this month: <strong>Bills & Utilities</strong> ($1,160.86 saved), <strong>Shopping</strong> ($1,029.92 saved), <strong>Dining & Drinks</strong> ($330.93 saved).</p>
+<p>The bonus pool is healthy at <strong>$15,777.06</strong>. Spending under budget has been keeping the gap draws minimal.</p>
+  </div>
+</div>
+
+<!-- Recommendations -->
+<div class="section">
+  <h2>Recommendations</h2>
+  <div class="rec-grid">
+    <div class="rec-card rec-watch"><strong>Medical</strong> $613.41 vs $345.87 budget (77% over) — look for ways to pull back next month.</div>
+<div class="rec-card rec-watch"><strong>Groceries</strong> $1,450.67 vs $1,312.91 budget (10% over) — look for ways to pull back next month.</div>
+<div class="rec-card rec-watch"><strong>Education</strong> $725.00 vs $607.35 budget (19% over) — look for ways to pull back next month.</div>
+<div class="rec-card rec-watch"><strong>Vehicle Maintenance</strong> $500.00 vs $400.00 budget (25% over) — look for ways to pull back next month.</div>
+<div class="rec-card rec-watch"><strong>Fees</strong> $87.00 vs $0.38 budget (22618% over) — look for ways to pull back next month.</div>
+<div class="rec-card rec-watch"><strong>Software & Tech</strong> $164.17 vs $146.18 budget (12% over) — look for ways to pull back next month.</div>
+<div class="rec-card rec-win"><strong>Bills & Utilities</strong> $4,001.12 vs $5,161.98 budget — great discipline here.</div>
+<div class="rec-card rec-win"><strong>Shopping</strong> $833.37 vs $1,863.29 budget — great discipline here.</div>
+<div class="rec-card rec-win"><strong>Dining & Drinks</strong> $883.95 vs $1,214.88 budget — great discipline here.</div>
+<div class="rec-card rec-win"><strong>Auto & Transport</strong> $99.52 vs $317.61 budget — great discipline here.</div>
+<div class="rec-card rec-win"><strong>Uncategorized</strong> $0.00 vs $197.63 budget — great discipline here.</div>
+<div class="rec-card rec-win"><strong>Pets</strong> $394.11 vs $508.83 budget — great discipline here.</div>
+<div class="rec-card rec-win"><strong>Entertainment & Rec.</strong> $83.14 vs $189.75 budget — great discipline here.</div>
+<div class="rec-card rec-win"><strong>Cash & Checks</strong> $4.00 vs $91.42 budget — great discipline here.</div>
+<div class="rec-card rec-win"><strong>Charitable Donations</strong> $3.00 vs $77.81 budget — great discipline here.</div>
+<div class="rec-card rec-win"><strong>Taxes</strong> $0.00 vs $73.08 budget — great discipline here.</div>
+<div class="rec-card rec-win"><strong>Home & Garden</strong> $156.62 vs $224.81 budget — great discipline here.</div>
+<div class="rec-card rec-win"><strong>Legal</strong> $0.00 vs $1.73 budget — great discipline here.</div>
+  </div>
+</div>
+
+
+</body>
+</html>
