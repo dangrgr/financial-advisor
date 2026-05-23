@@ -1,0 +1,377 @@
+# ============================================================
+# RETIREMENT PLAN — Dan & Terri Grindall
+# GOAL: retire on Dan's 55th birthday (2034-07-18), spend $12-14k/mo.
+#
+# HOW TO USE THIS FILE
+#   Every Jan 1: go to the matching entry under `checkpoints`, fill in
+#   each `actual` / null field from the source noted, then compare your
+#   `balances.total_investable` to `target_total_investable`. We review
+#   the variance together and confirm we're on-track (or adjust the plan).
+#
+#   All dollar figures are in TODAY'S DOLLARS (real terms) unless noted.
+#   Re-run the model anytime:  python3 retirement_projection.py
+# ============================================================
+
+meta:
+  plan_name: "55th Birthday Retirement"
+  created: 2026-05-23
+  last_reviewed: 2026-05-23
+  target_retirement_date: 2034-07-18
+  target_retirement_age_dan: 55
+  plan_horizon_to_age_dan: 95
+  spend_goal_monthly: [12000, 14000]            # the goal you chose
+  spend_goal_planning_midpoint_annual: 156000   # $13k/mo, planning anchor
+
+people:
+  dan:
+    birth_date: 1979-07-18
+    age_at_2026: 47
+    ssa_today_dollars_per_month:                # from ssa.gov
+      at_62: 2851
+      at_67_FRA: 4223
+      at_70: 5266
+  terri:
+    birth_date: 1977            # CONFIRM exact date
+    age_at_2026: 49
+    ssa_today_dollars_per_month: # CONFIRM at her ssa.gov (currently estimated ~2/3 of Dan)
+      at_62: null
+      at_67_FRA: 2815
+      at_70: null
+
+assumptions:
+  real_return_base: 0.05        # nominal ~8% minus ~3% inflation
+  real_return_stress: 0.04      # proxy for a poor-returns / sequence-risk world
+  inflation: 0.03
+  ss_claim_age: 67
+  ss_benefit_haircut: 0.0       # set 0.20 to stress a 20% Social Security cut
+  health_insurance_bridge_per_person_pre65: 15000  # private coverage until age 65
+  retirement_tax_rates:
+    tax_deferred_withdrawal: 0.12
+    taxable_gains: 0.075
+    social_security: 0.10
+
+planned_contributions_per_year: # what the plan assumes you invest (today's $)
+  k401_employee: 24000          # rises to ~31500 at age 50+ (catch-up)
+  k401_employer_match: 8880     # 4% of $222k base
+  ira_dan_backdoor_roth: 7000   # rises to 8000 at 50+ (clean: Dan has $0 trad-IRA basis)
+  ira_terri: 0                  # NOT eligible for clean backdoor Roth: her large pre-tax
+                                # IRA triggers the pro-rata rule. Route her $7k to taxable,
+                                # OR roll her pre-tax IRA into a 401k first (clears pro-rata).
+                                # See roth_conversion_strategy below.
+  taxable_brokerage: 57000      # = $50k surplus bonus + ~$7k redirected from Terri's IRA.
+                                # KEY LEVER: this also sizes the penalty-free 55-59.5 bridge.
+                                # Target ~$50k surplus (~$57k total). Floor ~$30k: below that the
+                                # taxable bucket runs dry before 59.5. See early_withdrawal_sequence.
+                                #   ~$50k surplus -> taxable ~$707k @2034, bridge to age 60 (clean)
+                                #   ~$30k surplus -> taxable ~$497k @2034, bridge only to age 59
+
+# ------------------------------------------------------------
+# ROTH CONVERSION STRATEGY — Terri's pre-tax IRA + the broader pre-tax pile
+# WHY: Terri can't do clean backdoor Roth (large pre-tax IRA -> pro-rata rule);
+#   Dan has $0 trad-IRA basis so his backdoor stays clean. Separately, the whole
+#   pre-tax pile (~$946k now, both spouses) compounds to a large RMD at age 75
+#   (Terri ~2052 / Dan ~2054) stacked on ~$84k SS -> 32%+ brackets, IRMAA
+#   surcharges, and a severe widow's-penalty for the survivor (single brackets).
+# WHEN: NOT in working years 2026-2033 (you're in 24-32% now). Begin at
+#   retirement (2034); FRONT-LOAD the pre-SS window 2034-2043.
+# BRACKET TARGET (today's $, MFJ taxable-income ceilings):
+#   12% top ~$96,950 | 22% top ~$206,700 | 24% top ~$394,600 | (avoid 32% > ~$394,600)
+#   -> Fill to TOP OF 22% (~$207k) each year; opportunistically into 24% in big
+#      years. This converts ~$190k/yr at a ~13-17% blended federal rate.
+#   -> ALT (if you want ACA health subsidies pre-65): cap at top of 12% (~$97k),
+#      slower but cheaper premiums. Probably skip: pile is large and you budgeted
+#      full health cost anyway.
+# ORDER: Terri's pre-tax IRA first (also clears her future backdoor path), then
+#   Dan's pre-tax 401ks (eBay + Empower already rollable; Voleon is Dan's CURRENT
+#   401k -> becomes convertible only after he separates at retirement in 2034).
+# WATCH: ACA MAGI subsidy cliff (pre-65), IRMAA (2-yr lookback before 65), NIIT,
+#   Colorado ~4.4% state tax on each conversion.
+roth_conversion_strategy:
+  terri_pretax_ira_to_convert:    # CONFIRMED: Terri's traditional IRAs
+    schwab_roll_over_5186: 179386
+    schwab_rollover_ira_8797: 47103
+    rollover_ira_brokerage_x36: 152222  # off Rocket Money (her separate login)
+    confirmed_total: 378711
+  dan_pretax_401ks_convertible_after_2034: # roll to IRA after he separates, then convert
+    ebay_fidelity_8049: 344196    # former employer (rollable now)
+    empower_0101: 126944          # former employer (rollable now)
+    voleon_fidelity_7960: 96645   # Dan's CURRENT 401k -> convertible only after retiring
+  working_years_action: "Skip Terri backdoor; route her $7k to taxable. OR roll her pre-tax IRA into a roll-in-friendly 401k to enable a clean backdoor now."
+  start_year: 2034
+  primary_window: "2034-2043 (retirement -> before SS at 67)"
+  annual_target_bracket: "fill to top of 22% (~$207k MFJ taxable, today's $); into 24% opportunistically"
+  do_not_convert_during_working_years: true
+
+# Conversion log — fill `actual_converted` each year once retired.
+roth_conversion_schedule:
+  - {year: 2034, dan_age: 55, target: "top of 22% (~$207k)", planned: "~$190k", actual_converted: null, notes: "Start with Terri's IRA"}
+  - {year: 2035, dan_age: 56, target: "top of 22% (~$207k)", planned: "~$190k", actual_converted: null, notes: "Still draining Terri's IRAs (~$379k now -> ~$559k by 2034)"}
+  - {year: 2036, dan_age: 57, target: "top of 22% (~$207k)", planned: "~$190k", actual_converted: null, notes: ""}
+  - {year: 2037, dan_age: 58, target: "top of 22% (~$207k)", planned: "~$190k", actual_converted: null, notes: "Terri's IRAs drained ~here; switch to Dan's eBay/Empower 401k money"}
+  - {year: 2038, dan_age: 59, target: "top of 22% (~$207k)", planned: "~$190k", actual_converted: null, notes: "Voleon (Dan's former-current 401k) now rolled to IRA & convertible"}
+  - {year: 2039, dan_age: 60, target: "top of 22% (~$207k)", planned: "~$190k", actual_converted: null, notes: ""}
+  - {year: 2040, dan_age: 61, target: "top of 22% (~$207k)", planned: "~$190k", actual_converted: null, notes: ""}
+  - {year: 2041, dan_age: 62, target: "top of 22% (~$207k)", planned: "~$190k", actual_converted: null, notes: "Decide SS claim age (62 vs 67 vs 70)"}
+  - {year: 2042, dan_age: 63, target: "top of 22% (~$207k)", planned: "~$190k", actual_converted: null, notes: ""}
+  - {year: 2043, dan_age: 64, target: "top of 22% (~$207k)", planned: "~$190k", actual_converted: null, notes: "Last full pre-SS year if claiming at 67"}
+  # 2044+: SS begins (Terri 67) -> income floor rises; slow/stop conversions to
+  # avoid 32%+. Finish any remainder before RMD age 75 (Terri ~2052 / Dan ~2054).
+
+# ------------------------------------------------------------
+# EARLY-RETIREMENT WITHDRAWAL SEQUENCE (55-65) — avoid the 10% early penalty
+# RULE: traditional IRA/401k withdrawals before age 59.5 owe a 10% penalty.
+#   Dan turns 59.5 in Jan 2039; Terri ~early 2037. Bridge those years with
+#   penalty-free sources ONLY. (The projection confirms taxable alone funds
+#   ages 55-59 and is exhausted ~age 60 — so pre-tax draws naturally start
+#   AFTER 59.5. This section just makes that explicit and adds backstops.)
+# DON'Ts before 59.5: do NOT take traditional IRA/401k money for SPENDING.
+#   Roth CONVERSIONS are fine (taxed, not penalized) — just don't spend the
+#   converted dollars within 5 yrs while under 59.5.
+early_withdrawal_sequence:
+  ages_55_to_59_5:              # 2034 - ~2039, penalty-free sources only
+    primary: "Taxable brokerage (Vanguard 7157). No penalty ever; only cap-gains tax. Covers ages 55-59 per the model. Spending it down also keeps MAGI low for cheap Roth conversions."
+    backup_1: "Roth contributions/basis — withdrawable anytime tax- & penalty-free (leave earnings untouched)."
+    backup_2: "Rule of 55 on the VOLEON 401k — separating from Voleon in the year you turn 55 makes THAT plan's withdrawals penalty-free at 55. Only Voleon qualifies (eBay/Empower are prior employers). Requires leaving funds in the Voleon plan (don't roll to IRA) and the plan allowing partial distributions."
+    last_resort: "72(t)/SEPP from an IRA (rigid 5-yr schedule). Unlikely to be needed given the taxable bridge."
+    voleon_decision: "Tension: Rule of 55 needs Voleon kept in-plan; converting Voleon needs it rolled to an IRA. Default = roll to IRA and convert (taxable bridge covers spending), but you may keep it in-plan as penalty-free backstop liquidity."
+  ages_59_5_to_65:             # ~2039 - 2044
+    primary: "Penalty gone. Continue taxable (drained ~60), then traditional/401k — which also keeps filling the 22% bracket pre-RMD. Preserve Roth for last."
+    note: "Health-insurance bridge ($15k/person) runs until each turns 65 (Medicare)."
+
+# ------------------------------------------------------------
+# MORTGAGE STRATEGY — decided 2026-05
+mortgage_strategy:
+  decision: "DO NOT prepay — keep the 2.75% fixed loan; invest the difference."
+  balance: 340657
+  rate: 0.0275
+  pi_monthly: 1688             # principal+interest; escrow ~$861 -> $2,550 all-in
+  payoff_year_natural: 2049    # ~Dan age 70 (or sooner via inheritance)
+  rationale:
+    - "2.75% is below risk-free yields (money market / T-bills) — effectively free leverage."
+    - "Prepaying would drain the liquid taxable brokerage needed for the 55-59.5 bridge."
+    - "No tax angle: standard deduction applies (itemized ~$19k < ~$32k MFJ), so the mortgage interest isn't deductible anyway."
+    - "Inflation erodes the fixed payment: $1,688 today ~= $850 real by 2049."
+    - "Already inside the $120k spend; pays off ~2049 or at inheritance."
+  never_refinance: "Today's rates ~6-7%. This 2.75% loan is a keeper."
+
+# Expected total investable portfolio if on-plan (base 5% real, $50k taxable
+# saved/yr). Each Jan 1, compare your actual total to the matching year.
+target_trajectory:
+  2026-01-01: 1446558           # baseline / starting point
+  2027-01-01: 1620610
+  2028-01-01: 1804414
+  2029-01-01: 1997409
+  2030-01-01: 2208979
+  2031-01-01: 2431126
+  2032-01-01: 2664382
+  2033-01-01: 2909300
+  2034-01-01: 3166464
+  2034-07-18: 3154517           # ~retirement (after partial-year drawdown)
+
+# Spend-goal feasibility retiring at 55 (from retirement_projection.py):
+spend_feasibility_at_55:
+  "$12,000/mo": "SAFE in both base and stress (4% real) — robust floor"
+  "$13,000/mo": "Safe in base; fails stress — needs ~5% real returns or upside"
+  "$14,000/mo": "Safe in base; relies on returns plus the upside buffers below"
+
+# Upside NOT counted in target_trajectory — every item makes the plan safer:
+upside_buffers:
+  college_529: "~$115k + $500/mo already funds the kids' college, off-balance-sheet"
+  cash_reserve: "~$120k + incoming $50k gift from Terri's parents"
+  inheritance: "parents 75-80; would pay off mortgage / add to portfolio (timing unknown)"
+  mortgage_payoff: "P&I ~$1,688/mo drops off ~2049 (or earlier via inheritance)"
+  delayed_ss: "claiming at 70 = Dan $5,266/mo vs $4,223 at 67"
+  part_time_income: "any earned income shortens the pre-67 bridge"
+
+# ============================================================
+# REVIEW WATCHLIST — open questions to revisit each Jan 1 (most material first).
+# NOT blockers; the plan is conservatively framed. Flip `status` as resolved.
+# ============================================================
+review_watchlist:
+  - id: conversion_taxes
+    priority: 1
+    issue: "Roth-conversion taxes likely understated. 'Fill the 22% bracket' double-counts once post-59.5 pre-tax SPENDING also fills the low brackets; real blended rate ~18-22% (fed + 3.8% NIIT in big years + CO 4.4%), not 12-17%."
+    why: "Thins the cushion; argues for leaning to the $12-13k/mo end."
+    action: "At the first retired review, build a representative conversion-year tax worksheet (fed + NIIT + CO); size conversions NET of other taxable income."
+    status: open
+  - id: rmd_drain
+    priority: 2
+    issue: "Pre-tax pile (~$946k now -> ~$1.4M by 2034) may not fully drain via 22%-only conversions before RMDs at 75 (Terri ~2052 / Dan ~2054)."
+    why: "Surviving pre-tax balance forces large RMDs + widow's-penalty taxes."
+    action: "Project pre-tax balance at age 75 after planned conversions + growth; if > ~$1M, deliberately convert into the 24% bracket some years."
+    status: open
+  - id: health_aca
+    priority: 3
+    issue: "$15k/person health bridge is a placeholder; unsubsidized CO silver for 55+ may run $18-24k/person by 2034. Large conversions also forfeit ACA subsidies."
+    why: "Understated health cost directly raises the pre-65 spend need."
+    action: "Near the date, price actual CO marketplace 55-yo silver plans + inflate; treat as a hard line."
+    status: open
+  - id: terri_ss_survivor
+    priority: 4
+    issue: "Terri's $2,815/mo is a 2/3-of-Dan ESTIMATE (unconfirmed). Survivor case not modeled: at first death the household keeps only the larger benefit and shifts to single brackets."
+    why: "Affects the income floor and the widow's-penalty tax math."
+    action: "Pull Terri's real ssa.gov estimate; sanity-check a survivor-income scenario (Dan's benefit alone, single brackets)."
+    status: open
+  - id: taxable_basis
+    priority: 5
+    issue: "Bridge cap-gains modeled at 7.5% effective, assuming ~50% basis in account 7157."
+    why: "If embedded gains are higher, the bridge drawdown costs more tax."
+    action: "Pull actual cost basis from Vanguard for 7157; harvest gains in low-conversion years."
+    status: open
+  - id: college_timing
+    priority: 6
+    issue: "Older kid's freshman year (~2030) is PRE-retirement; tuition overlaps the high-earning + conversion years. 529s ($115k + $500/mo) should cover but unverified."
+    why: "A 529 shortfall would raid the taxable bridge fund."
+    action: "Project each 529 balance vs. 4-year cost-of-attendance at matriculation; top up now if short."
+    status: open
+
+# ============================================================
+# ANNUAL CHECK-IN LOG — fill the null fields every Jan 1.
+# SOURCES: agi = Form 1040 line 11 | balances = Rocket Money / Vanguard /
+# Schwab / Fidelity | ssa = ssa.gov | mortgage_balance = servicer statement.
+# total_investable = tax_deferred + roth + taxable (exclude cash & 529).
+# ============================================================
+checkpoints:
+
+  - date: 2026-01-01
+    status: BASELINE
+    dan_age: 47
+    terri_age: 49
+    income:
+      base_salary: 222000        # raise effective 2026-05-01 (was 185000)
+      bonus_gross: 150000
+      agi: null                  # fill from tax return
+    contributions_actual:
+      k401_employee: null
+      k401_match: null
+      ira_dan: null
+      ira_terri: null
+      taxable: null
+      total: null
+    balances:
+      tax_deferred: 946496
+      roth: 327070
+      taxable: 172992
+      total_investable: 1446558
+      cash: 83725
+      college_529: 115370
+    ssa_latest:
+      dan_at_67: 4223
+      terri_at_67: 2815          # estimate — confirm
+    mortgage_balance: 340657
+    target_total_investable: 1446558
+    variance_vs_target: 0
+    on_track: true
+    notes: "Baseline from May 2026 screenshots. New comp effective May 1."
+
+  - date: 2027-01-01
+    status: PLANNED
+    dan_age: 48
+    terri_age: 50                # Terri turns 50 -> IRA catch-up ($8k)
+    income: {base_salary: null, bonus_gross: null, agi: null}
+    contributions_actual: {k401_employee: null, k401_match: null, ira_dan: null, ira_terri: null, taxable: null, total: null}
+    balances: {tax_deferred: null, roth: null, taxable: null, total_investable: null, cash: null, college_529: null}
+    ssa_latest: {dan_at_67: null, terri_at_67: null}
+    mortgage_balance: null
+    target_total_investable: 1620610
+    variance_vs_target: null
+    on_track: null
+    notes: ""
+
+  - date: 2028-01-01
+    status: PLANNED
+    dan_age: 49
+    terri_age: 51
+    income: {base_salary: null, bonus_gross: null, agi: null}
+    contributions_actual: {k401_employee: null, k401_match: null, ira_dan: null, ira_terri: null, taxable: null, total: null}
+    balances: {tax_deferred: null, roth: null, taxable: null, total_investable: null, cash: null, college_529: null}
+    ssa_latest: {dan_at_67: null, terri_at_67: null}
+    mortgage_balance: null
+    target_total_investable: 1804414
+    variance_vs_target: null
+    on_track: null
+    notes: ""
+
+  - date: 2029-01-01
+    status: PLANNED
+    dan_age: 50                  # Dan turns 50 -> 401k catch-up (~$31.5k) + IRA $8k
+    terri_age: 52
+    income: {base_salary: null, bonus_gross: null, agi: null}
+    contributions_actual: {k401_employee: null, k401_match: null, ira_dan: null, ira_terri: null, taxable: null, total: null}
+    balances: {tax_deferred: null, roth: null, taxable: null, total_investable: null, cash: null, college_529: null}
+    ssa_latest: {dan_at_67: null, terri_at_67: null}
+    mortgage_balance: null
+    target_total_investable: 1997409
+    variance_vs_target: null
+    on_track: null
+    notes: ""
+
+  - date: 2030-01-01
+    status: PLANNED
+    dan_age: 51
+    terri_age: 53
+    income: {base_salary: null, bonus_gross: null, agi: null}
+    contributions_actual: {k401_employee: null, k401_match: null, ira_dan: null, ira_terri: null, taxable: null, total: null}
+    balances: {tax_deferred: null, roth: null, taxable: null, total_investable: null, cash: null, college_529: null}
+    ssa_latest: {dan_at_67: null, terri_at_67: null}
+    mortgage_balance: null
+    target_total_investable: 2208979
+    variance_vs_target: null
+    on_track: null
+    notes: ""
+
+  - date: 2031-01-01
+    status: PLANNED
+    dan_age: 52
+    terri_age: 54
+    income: {base_salary: null, bonus_gross: null, agi: null}
+    contributions_actual: {k401_employee: null, k401_match: null, ira_dan: null, ira_terri: null, taxable: null, total: null}
+    balances: {tax_deferred: null, roth: null, taxable: null, total_investable: null, cash: null, college_529: null}
+    ssa_latest: {dan_at_67: null, terri_at_67: null}
+    mortgage_balance: null
+    target_total_investable: 2431126
+    variance_vs_target: null
+    on_track: null
+    notes: ""
+
+  - date: 2032-01-01
+    status: PLANNED
+    dan_age: 53
+    terri_age: 55
+    income: {base_salary: null, bonus_gross: null, agi: null}
+    contributions_actual: {k401_employee: null, k401_match: null, ira_dan: null, ira_terri: null, taxable: null, total: null}
+    balances: {tax_deferred: null, roth: null, taxable: null, total_investable: null, cash: null, college_529: null}
+    ssa_latest: {dan_at_67: null, terri_at_67: null}
+    mortgage_balance: null
+    target_total_investable: 2664382
+    variance_vs_target: null
+    on_track: null
+    notes: ""
+
+  - date: 2033-01-01
+    status: PLANNED
+    dan_age: 54
+    terri_age: 56
+    income: {base_salary: null, bonus_gross: null, agi: null}
+    contributions_actual: {k401_employee: null, k401_match: null, ira_dan: null, ira_terri: null, taxable: null, total: null}
+    balances: {tax_deferred: null, roth: null, taxable: null, total_investable: null, cash: null, college_529: null}
+    ssa_latest: {dan_at_67: null, terri_at_67: null}
+    mortgage_balance: null
+    target_total_investable: 2909300
+    variance_vs_target: null
+    on_track: null
+    notes: ""
+
+  - date: 2034-01-01
+    status: GO/NO-GO          # final check ~6 months before retirement
+    dan_age: 54
+    terri_age: 56
+    income: {base_salary: null, bonus_gross: null, agi: null}
+    contributions_actual: {k401_employee: null, k401_match: null, ira_dan: null, ira_terri: null, taxable: null, total: null}
+    balances: {tax_deferred: null, roth: null, taxable: null, total_investable: null, cash: null, college_529: null}
+    ssa_latest: {dan_at_67: null, terri_at_67: null}
+    mortgage_balance: null
+    target_total_investable: 3166464
+    variance_vs_target: null
+    on_track: null
+    notes: "Final go/no-go. If total_investable >= ~$2.7M, $12k/mo is safe even in the stress case; >= ~$3.1M comfortably supports $13-14k/mo in the base case."
