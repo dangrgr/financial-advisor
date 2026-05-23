@@ -2,7 +2,7 @@
 
 **The goal:** both retired by **July 18, 2034** (Dan 55, Terri 57), spending **$12,000–$14,000/month** in today's dollars, comfortable with travel, and money that lasts to age 95.
 
-**The verdict:** On plan, this is a **low-risk, comfortable target.** Retiring at 55 you'd have ~$3.15M invested, never dip below ~$3.0M even mid-retirement, and—if returns merely cooperate—die with $9M+. Even a poor-returns world (4% real) bottoms at ~$2.0M and still supports $12k/mo.
+**The verdict:** On plan, this is **bulletproof at the low end of your range and returns-dependent at the top.** At **$12k/mo** it survives every scenario (dies with ~$0.9M even in the stress case). At your **$13k/mo midpoint** the base case is strong — start retirement with ~$3.1M, never dip below ~$2.4M, die with ~$4.0M — but a sustained poor-returns world (4% real) would draw it down by your early 90s. So treat **$12k/mo as the safe floor and $13–14k/mo as the reward if markets cooperate**, with the uncounted upside below as backstop.
 
 ---
 
@@ -34,8 +34,8 @@
 | Monthly spend | Base case (5% real) | Stress (4% real, smaller bonus) |
 |---|---|---|
 | **$12,000** | ✅ dies with ~$5.8M | ✅ dies with ~$0.9M |
-| **$13,000** | ✅ dies with ~$4.1M | ⚠️ needs ~5% real or upside |
-| **$14,000** | ✅ dies with ~$2.5M | ⚠️ relies on upside buffers |
+| **$13,000** | ✅ dies with ~$4.0M | ⚠️ depletes ~early 90s — needs ~5% real or upside |
+| **$14,000** | ✅ dies with ~$2.4M | ⚠️ relies on upside buffers |
 
 **Plan around $12k/mo as guaranteed-safe, treat $13–14k/mo as the reward if returns cooperate** — the max sustainable spend at 55 is ~$12,750/mo in the conservative world and ~$15,500/mo in the base case. And none of the upside below is counted: 529s already cover college, ~$134k cash (incl. the $50k gift), a parental inheritance (paying off the mortgage), the mortgage dropping off ~2049 anyway, and the option to delay SS to 70 ($5,266/mo).
 

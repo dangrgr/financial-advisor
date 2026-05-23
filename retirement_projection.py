@@ -26,8 +26,8 @@ TERRI_AGE = 49
 PLAN_TO_DAN_AGE = 95          # model through Dan age 95 (Terri 97)
 
 # Starting investable balances by tax treatment (May 2026 screenshots).
-# Excludes: 529s ($115k), kids' UTMA ($3.6k), and ~$120k cash buffer
-# (incl. incoming $50k gift). All of those are UPSIDE not modeled here.
+# Excludes: 529s ($115k), kids' UTMA ($3.6k), and ~$134k cash buffer
+# (~$84k now + incoming $50k gift). All of those are UPSIDE not modeled here.
 START_TAX_DEFERRED = 946_496   # old 401ks + rollover/trad IRAs (taxed at withdrawal)
                                # = $794,274 (Rocket Money) + $152,222 Terri IRA (...36, off-RM)
 START_ROTH         = 327_070   # Roth IRAs (tax-free)
@@ -47,7 +47,8 @@ REAL_RETURN = 0.05
 # Spending in retirement (real $/yr, ALL-IN including the 2.75% mortgage,
 # which per your note stays until an inheritance windfall pays it off — that
 # payoff is treated as upside, not assumed here).
-SPEND = 120_000
+SPEND = 156_000   # $13k/mo — the planning midpoint of the $12-14k goal.
+                  # $12k and $14k are stress-tested in the spend table below.
 HEALTH_BRIDGE_PER_PERSON = 15_000   # private health insurance until age 65
 
 # Social Security (today's $, benefit at Full Retirement Age = 67).
@@ -155,6 +156,22 @@ def earliest_age(real_return=REAL_RETURN, taxable_savings=TAXABLE_SAVINGS):
     return None
 
 
+def spend_feasibility_rows(retire_age=55):
+    """For each monthly spend goal, test age-`retire_age` survival under base &
+    stress, plus the earliest feasible age. Temporarily overrides the SPEND
+    global, then restores it."""
+    global SPEND
+    base = SPEND
+    rows = []
+    for annual in (144_000, 156_000, 168_000):
+        SPEND = annual
+        ok_b, end_b, _ = simulate(retire_age, 0.05, 50_000)
+        ok_s, end_s, _ = simulate(retire_age, 0.04, 30_000)
+        rows.append((annual, ok_b, end_b, ok_s, end_s, earliest_age(0.05, 50_000)))
+    SPEND = base
+    return rows
+
+
 # ---------------------------------------------------------------------------
 # REPORT
 # ---------------------------------------------------------------------------
@@ -219,9 +236,21 @@ def main():
             row.append(f"  {a if a else '>67'}".rjust(7))
         print("  " + "".join(row))
     print()
-    print("Not modeled (all upside): $115k 529s, ~$120k cash buffer + $50k gift,")
+    print("Spend-goal feasibility retiring at 55 (today's $):")
+    print("  per mo |  base (5% real,$50k)  | stress (4% real,$30k) | earliest age")
+    print("  " + "-" * 64)
+    for annual, ok_b, end_b, ok_s, end_s, ea in spend_feasibility_rows(55):
+        b = ("OK " + fmt(end_b)) if ok_b else "FAIL"
+        s = ("OK " + fmt(end_s)) if ok_s else "FAIL"
+        print(f"  ${annual/12:>5,.0f} |  {b:<20} | {s:<20} | {ea}")
+    print()
+    print("Not modeled (all upside): $115k 529s, ~$134k cash (incl $50k gift),")
     print("mortgage payoff (~2049 or at inheritance), parental inheritance,")
     print("Social Security claimed later than 67, post-retirement part-time work.")
+    print()
+    print("Known simplifications (revisit at check-ins): RMDs not modeled;")
+    print("Roth-conversion taxes handled in the plan, not here; flat retirement")
+    print("tax rates; annual begin-of-year timing; SS taxed at a flat rate.")
 
 
 if __name__ == "__main__":
