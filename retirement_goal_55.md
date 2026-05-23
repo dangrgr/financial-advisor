@@ -43,9 +43,11 @@
 
 ## Roth conversion strategy (Terri's IRA + the pre-tax pile)
 
-Terri can't do a clean backdoor Roth — her large pre-tax IRA (assumed the two Charles Schwab rollovers, **~$226k**; *confirm, and whether Voleon/Fidelity 7960 is hers*) triggers the **pro-rata rule**, taxing most of any conversion. The fix is **scheduled Roth conversions in your low-income early-retirement years**, not a backdoor.
+Terri can't do a clean backdoor Roth — her two Charles Schwab traditional IRAs (**$226,489**) trigger the **pro-rata rule**, taxing most of any conversion. The fix is **scheduled Roth conversions in your low-income early-retirement years**, not a backdoor.
 
-**Why bother:** your combined pre-tax pile (~$794k now) compounds into large RMDs at age 75 (Terri ~2052 / Dan ~2054), stacked on ~$84k of Social Security — that pushes you into 32%+ brackets, triggers IRMAA Medicare surcharges, and creates a brutal "widow's penalty" for whichever of you is left filing single. Converting early smooths all of that.
+**Why bother:** your combined pre-tax pile (~$794k now — Terri's $226k IRAs plus your eBay $344k + Empower $127k + Voleon $97k 401ks) compounds into large RMDs at age 75 (Terri ~2052 / Dan ~2054), stacked on ~$84k of Social Security — that pushes you into 32%+ brackets, triggers IRMAA Medicare surcharges, and creates a brutal "widow's penalty" for whichever of you is left filing single. Converting early smooths all of that.
+
+Note: **Voleon (7960) is your current 401k** — pre-tax, but convertible only after you separate at retirement in 2034. eBay and Empower are former-employer 401ks (rollable now). So in the window, convert Terri's IRAs first, then your 401k money once it's rolled to an IRA.
 
 | Phase | Years | Action |
 |---|---|---|
