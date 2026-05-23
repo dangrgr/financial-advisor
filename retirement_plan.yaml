@@ -58,7 +58,12 @@ planned_contributions_per_year: # what the plan assumes you invest (today's $)
                                 # IRA triggers the pro-rata rule. Route her $7k to taxable,
                                 # OR roll her pre-tax IRA into a 401k first (clears pro-rata).
                                 # See roth_conversion_strategy below.
-  taxable_brokerage: 57000      # surplus bonus invested (+$7k redirected from Terri's IRA)
+  taxable_brokerage: 57000      # = $50k surplus bonus + ~$7k redirected from Terri's IRA.
+                                # KEY LEVER: this also sizes the penalty-free 55-59.5 bridge.
+                                # Target ~$50k surplus (~$57k total). Floor ~$30k: below that the
+                                # taxable bucket runs dry before 59.5. See early_withdrawal_sequence.
+                                #   ~$50k surplus -> taxable ~$707k @2034, bridge to age 60 (clean)
+                                #   ~$30k surplus -> taxable ~$497k @2034, bridge only to age 59
 
 # ------------------------------------------------------------
 # ROTH CONVERSION STRATEGY — Terri's pre-tax IRA + the broader pre-tax pile

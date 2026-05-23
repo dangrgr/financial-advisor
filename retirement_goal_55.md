@@ -24,7 +24,7 @@
 - 401k: $24k employee + $8,880 match (catch-up bumps it at 50) = ~$32.9k
 - Dan backdoor Roth IRA: $7k (clean — Dan has $0 traditional-IRA basis)
 - Terri: **not** backdoor-eligible (her large pre-tax IRA triggers the pro-rata rule) — route her $7k to taxable for now; convert the IRA later (see below)
-- Surplus bonus → taxable brokerage: ~$57k **(the #1 lever — protect this)**
+- Surplus bonus → taxable brokerage: ~$50k + Terri's redirected ~$7k = **~$57k/yr** *(the #1 lever — it also builds your penalty-free 55–59½ bridge; floor ~$30k)*
 - **~$96k/yr total going to work.**
 
 ---
@@ -65,7 +65,7 @@ Traditional IRA/401k withdrawals before **age 59½** owe a 10% penalty (Dan hits
 
 | Ages | Spend from | Backstops | Don't |
 |---|---|---|---|
-| **55–59½** (2034–~2039) | **Taxable brokerage** (~$624k at retirement; lasts to ~60). Doubles as keeping MAGI low for cheap conversions. | Roth contributions/basis (tax- & penalty-free); **Rule of 55** on the Voleon 401k | **No traditional IRA/401k withdrawals for spending** (10% penalty). Conversions are fine. |
+| **55–59½** (2034–~2039) | **Taxable brokerage** (~$707k at retirement; lasts to ~60). Doubles as keeping MAGI low for cheap conversions. | Roth contributions/basis (tax- & penalty-free); **Rule of 55** on the Voleon 401k | **No traditional IRA/401k withdrawals for spending** (10% penalty). Conversions are fine. |
 | **59½–65** (2039–2044) | Taxable (drained ~60), then traditional/401k — also keeps filling the 22% bracket pre-RMD | Roth (preserve for last) | — |
 
 **Rule of 55:** because you separate from Voleon in the year you turn 55, that 401k's withdrawals are penalty-free at 55 — but *only* Voleon (eBay/Empower are prior employers), and *only* if you leave the money in that plan (don't roll it to an IRA) and the plan allows partial distributions. This is your penalty-free backstop if taxable runs short. Trade-off: keeping Voleon in-plan for Rule of 55 conflicts with rolling it to an IRA to convert it — since taxable covers the bridge, the default is roll-and-convert, but you can keep it in-plan as insurance.
@@ -92,7 +92,7 @@ If your real balance is **at or above** the target line each Jan 1, you're on tr
 
 ## The real risks (what would move the date)
 1. **Sequence-of-returns** in the first ~5 retirement years — the biggest threat. The $12k floor is the cushion.
-2. **The ~$50k/yr taxable savings** holding up (it rides on the bonus). Drops to ~$30k? Roughly 1 year later, or trim to $12k/mo.
+2. **The ~$50k/yr taxable savings** holding up (it rides on the bonus) — this both grows the portfolio *and* sizes your penalty-free 55–59½ bridge. **~$30k is the floor** (date still works, bridge reaches ~59); below that, you'd lean on Rule of 55 / Roth basis earlier.
 3. **Health costs pre-65** — budgeted $15k/person/yr; revisit closer to the date.
 4. **Social Security policy** — if benefits get trimmed, lean to the $12k end.
 

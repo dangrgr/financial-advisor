@@ -37,7 +37,9 @@ START_TAXABLE      = 172_992   # Vanguard joint brokerage 7157
 # 401k: employee max + employer match (4% of $222k base = $8,880).
 # Catch-up contributions kick in automatically at age 50 ("always max").
 MATCH_401K = 8_880
-TAXABLE_SAVINGS = 50_000       # surplus bonus invested/yr — KEY ASSUMPTION
+TAXABLE_SAVINGS = 50_000       # surplus bonus invested/yr (Terri's ~$7-8k IRA
+                               # redirect is added automatically -> ~$57-58k total).
+                               # KEY LEVER: also sizes the penalty-free 55-59.5 bridge.
 
 # Growth (REAL = nominal ~7-8% minus ~3% inflation).
 REAL_RETURN = 0.05
@@ -67,11 +69,14 @@ SS_TAX_RATE        = 0.10     # ~85% of SS taxable, low bracket
 def annual_contributions(dan_age, terri_age, taxable_savings):
     """Return (tax_deferred, roth, taxable) contributions for one working year."""
     dan_401k_employee = 24_000 if dan_age < 50 else 31_500   # +catch-up at 50
-    dan_ira  = 7_000 if dan_age  < 50 else 8_000
-    terri_ira = 7_000 if terri_age < 50 else 8_000
+    dan_ira  = 7_000 if dan_age  < 50 else 8_000             # clean backdoor Roth
+    # Terri is NOT backdoor-eligible (her pre-tax IRA triggers pro-rata), so her
+    # would-be IRA contribution is redirected to the taxable brokerage instead.
+    terri_redirect = 7_000 if terri_age < 50 else 8_000
     tax_deferred = dan_401k_employee + MATCH_401K
-    roth = dan_ira + terri_ira                                # both backdoor Roth
-    return tax_deferred, roth, taxable_savings
+    roth = dan_ira
+    taxable = taxable_savings + terri_redirect
+    return tax_deferred, roth, taxable
 
 
 def _draw(need_net, buckets):
