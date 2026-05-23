@@ -22,8 +22,9 @@
 
 ## The savings engine (per year)
 - 401k: $24k employee + $8,880 match (catch-up bumps it at 50) = ~$32.9k
-- Two backdoor Roth IRAs: $14k *(action: move Terri from non-deductible Traditional to backdoor Roth)*
-- Surplus bonus → taxable brokerage: ~$50k **(the #1 lever — protect this)**
+- Dan backdoor Roth IRA: $7k (clean — Dan has $0 traditional-IRA basis)
+- Terri: **not** backdoor-eligible (her large pre-tax IRA triggers the pro-rata rule) — route her $7k to taxable for now; convert the IRA later (see below)
+- Surplus bonus → taxable brokerage: ~$57k **(the #1 lever — protect this)**
 - **~$96k/yr total going to work.**
 
 ---
@@ -39,6 +40,22 @@
 **Plan around $12k/mo as guaranteed-safe, treat $13–14k/mo as the reward if returns cooperate** — and they likely will, because none of the upside below is counted: 529s already cover college, ~$170k cash, a parental inheritance (paying off the mortgage), the mortgage dropping off ~2049 anyway, and the option to delay SS to 70 ($5,266/mo).
 
 ---
+
+## Roth conversion strategy (Terri's IRA + the pre-tax pile)
+
+Terri can't do a clean backdoor Roth — her large pre-tax IRA (assumed the two Charles Schwab rollovers, **~$226k**; *confirm, and whether Voleon/Fidelity 7960 is hers*) triggers the **pro-rata rule**, taxing most of any conversion. The fix is **scheduled Roth conversions in your low-income early-retirement years**, not a backdoor.
+
+**Why bother:** your combined pre-tax pile (~$794k now) compounds into large RMDs at age 75 (Terri ~2052 / Dan ~2054), stacked on ~$84k of Social Security — that pushes you into 32%+ brackets, triggers IRMAA Medicare surcharges, and creates a brutal "widow's penalty" for whichever of you is left filing single. Converting early smooths all of that.
+
+| Phase | Years | Action |
+|---|---|---|
+| **Working** | 2026–2033 | **Don't convert** — you're in the 24–32% bracket. Route Terri's $7k to taxable (or roll her IRA into a 401k to unlock a clean backdoor). |
+| **Golden window** | **2034–2043** | After retiring, income collapses. **Convert each year up to the top of the 22% bracket (~$207k MFJ taxable, today's $)** — Terri's IRA first, then Dan's rollovers. ~$190k/yr at a ~13–17% federal rate. |
+| **Post-SS** | 2044+ | SS raises your income floor — slow/stop conversions to avoid 32%+; finish any remainder before RMDs at 75. |
+
+**Bracket map (today's $, MFJ taxable):** 12% top ≈ $96,950 · **22% top ≈ $206,700 (the target)** · 24% top ≈ $394,600 · avoid 32%+.
+
+**One trade-off:** big conversions raise MAGI and can forfeit ACA health subsidies pre-65. Given the size of your pre-tax pile and that you've budgeted full-freight health, filling the 22% bracket beats chasing subsidies — but if you'd rather keep premiums subsidized, cap conversions at the top of 12% (~$97k/yr) instead. Watch IRMAA (2-year lookback) and Colorado's ~4.4% state tax on each conversion.
 
 ## The trajectory to watch (check actual vs target each Jan 1)
 

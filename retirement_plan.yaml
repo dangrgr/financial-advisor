@@ -53,9 +53,59 @@ assumptions:
 planned_contributions_per_year: # what the plan assumes you invest (today's $)
   k401_employee: 24000          # rises to ~31500 at age 50+ (catch-up)
   k401_employer_match: 8880     # 4% of $222k base
-  ira_dan_backdoor_roth: 7000   # rises to 8000 at 50+
-  ira_terri_backdoor_roth: 7000 # ACTION: switch Terri from non-deductible Trad -> backdoor Roth
-  taxable_brokerage: 50000      # surplus bonus invested; the #1 lever
+  ira_dan_backdoor_roth: 7000   # rises to 8000 at 50+ (clean: Dan has $0 trad-IRA basis)
+  ira_terri: 0                  # NOT eligible for clean backdoor Roth: her large pre-tax
+                                # IRA triggers the pro-rata rule. Route her $7k to taxable,
+                                # OR roll her pre-tax IRA into a 401k first (clears pro-rata).
+                                # See roth_conversion_strategy below.
+  taxable_brokerage: 57000      # surplus bonus invested (+$7k redirected from Terri's IRA)
+
+# ------------------------------------------------------------
+# ROTH CONVERSION STRATEGY — Terri's pre-tax IRA + the broader pre-tax pile
+# WHY: Terri can't do clean backdoor Roth (large pre-tax IRA -> pro-rata rule);
+#   Dan has $0 trad-IRA basis so his backdoor stays clean. Separately, the whole
+#   pre-tax pile (~$794k now, both spouses) compounds to a large RMD at age 75
+#   (Terri ~2052 / Dan ~2054) stacked on ~$84k SS -> 32%+ brackets, IRMAA
+#   surcharges, and a severe widow's-penalty for the survivor (single brackets).
+# WHEN: NOT in working years 2026-2033 (you're in 24-32% now). Begin at
+#   retirement (2034); FRONT-LOAD the pre-SS window 2034-2043.
+# BRACKET TARGET (today's $, MFJ taxable-income ceilings):
+#   12% top ~$96,950 | 22% top ~$206,700 | 24% top ~$394,600 | (avoid 32% > ~$394,600)
+#   -> Fill to TOP OF 22% (~$207k) each year; opportunistically into 24% in big
+#      years. This converts ~$190k/yr at a ~13-17% blended federal rate.
+#   -> ALT (if you want ACA health subsidies pre-65): cap at top of 12% (~$97k),
+#      slower but cheaper premiums. Probably skip: pile is large and you budgeted
+#      full health cost anyway.
+# ORDER: Terri's pre-tax IRA first (also clears her future backdoor path), then
+#   Dan's rollover IRAs / old 401ks (eBay, Empower once separated).
+# WATCH: ACA MAGI subsidy cliff (pre-65), IRMAA (2-yr lookback before 65), NIIT,
+#   Colorado ~4.4% state tax on each conversion.
+roth_conversion_strategy:
+  terri_pretax_ira_to_convert:    # CONFIRM accounts (Schwab not name-labeled in screenshot)
+    schwab_roll_over_5186: 179386
+    schwab_rollover_ira_8797: 47103
+    voleon_fidelity_7960: TBD     # confirm if Terri's, and IRA (convertible) vs active 401k (not)
+    assumed_total: 226489
+  working_years_action: "Skip Terri backdoor; route her $7k to taxable. OR roll her pre-tax IRA into a roll-in-friendly 401k to enable a clean backdoor now."
+  start_year: 2034
+  primary_window: "2034-2043 (retirement -> before SS at 67)"
+  annual_target_bracket: "fill to top of 22% (~$207k MFJ taxable, today's $); into 24% opportunistically"
+  do_not_convert_during_working_years: true
+
+# Conversion log — fill `actual_converted` each year once retired.
+roth_conversion_schedule:
+  - {year: 2034, dan_age: 55, target: "top of 22% (~$207k)", planned: "~$190k", actual_converted: null, notes: "Start with Terri's IRA"}
+  - {year: 2035, dan_age: 56, target: "top of 22% (~$207k)", planned: "~$190k", actual_converted: null, notes: ""}
+  - {year: 2036, dan_age: 57, target: "top of 22% (~$207k)", planned: "~$190k", actual_converted: null, notes: ""}
+  - {year: 2037, dan_age: 58, target: "top of 22% (~$207k)", planned: "~$190k", actual_converted: null, notes: ""}
+  - {year: 2038, dan_age: 59, target: "top of 22% (~$207k)", planned: "~$190k", actual_converted: null, notes: "Terri's IRA likely drained; move to Dan's rollovers"}
+  - {year: 2039, dan_age: 60, target: "top of 22% (~$207k)", planned: "~$190k", actual_converted: null, notes: ""}
+  - {year: 2040, dan_age: 61, target: "top of 22% (~$207k)", planned: "~$190k", actual_converted: null, notes: ""}
+  - {year: 2041, dan_age: 62, target: "top of 22% (~$207k)", planned: "~$190k", actual_converted: null, notes: "Decide SS claim age (62 vs 67 vs 70)"}
+  - {year: 2042, dan_age: 63, target: "top of 22% (~$207k)", planned: "~$190k", actual_converted: null, notes: ""}
+  - {year: 2043, dan_age: 64, target: "top of 22% (~$207k)", planned: "~$190k", actual_converted: null, notes: "Last full pre-SS year if claiming at 67"}
+  # 2044+: SS begins (Terri 67) -> income floor rises; slow/stop conversions to
+  # avoid 32%+. Finish any remainder before RMD age 75 (Terri ~2052 / Dan ~2054).
 
 # Expected total investable portfolio if on-plan (base 5% real, $50k taxable
 # saved/yr). Each Jan 1, compare your actual total to the matching year.
