@@ -90,6 +90,17 @@ If your real balance is **at or above** the target line each Jan 1, you're on tr
 
 ---
 
+## Mortgage: keep the 2.75%, don't prepay
+
+**Decision (2026-05): no extra payments.** In order of importance:
+1. **Liquidity** — prepaying locks cash in the house; you need it liquid for the 55–59½ bridge.
+2. **Risk-free cash already beats 2.75%** — locking in a 2.75% "return" is worse than a money-market fund.
+3. **No tax angle** — you take the standard deduction, so the interest isn't deductible (and at 2.75% it needn't be).
+4. **Inflation erodes it** — $1,688 fixed today ≈ $850 real by 2049.
+5. **Already in the plan** — it sits inside the $120k spend and pays off ~2049 (or at inheritance).
+
+**Never refinance** — today's rates (~6–7%) are far above your 2.75%.
+
 ## The real risks (what would move the date)
 1. **Sequence-of-returns** in the first ~5 retirement years — the biggest threat. The $12k floor is the cushion.
 2. **The ~$50k/yr taxable savings** holding up (it rides on the bonus) — this both grows the portfolio *and* sizes your penalty-free 55–59½ bridge. **~$30k is the floor** (date still works, bridge reaches ~59); below that, you'd lean on Rule of 55 / Roth basis earlier.

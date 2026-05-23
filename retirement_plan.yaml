@@ -138,6 +138,22 @@ early_withdrawal_sequence:
     primary: "Penalty gone. Continue taxable (drained ~60), then traditional/401k — which also keeps filling the 22% bracket pre-RMD. Preserve Roth for last."
     note: "Health-insurance bridge ($15k/person) runs until each turns 65 (Medicare)."
 
+# ------------------------------------------------------------
+# MORTGAGE STRATEGY — decided 2026-05
+mortgage_strategy:
+  decision: "DO NOT prepay — keep the 2.75% fixed loan; invest the difference."
+  balance: 340657
+  rate: 0.0275
+  pi_monthly: 1688             # principal+interest; escrow ~$861 -> $2,550 all-in
+  payoff_year_natural: 2049    # ~Dan age 70 (or sooner via inheritance)
+  rationale:
+    - "2.75% is below risk-free yields (money market / T-bills) — effectively free leverage."
+    - "Prepaying would drain the liquid taxable brokerage needed for the 55-59.5 bridge."
+    - "No tax angle: standard deduction applies (itemized ~$19k < ~$32k MFJ), so the mortgage interest isn't deductible anyway."
+    - "Inflation erodes the fixed payment: $1,688 today ~= $850 real by 2049."
+    - "Already inside the $120k spend; pays off ~2049 or at inheritance."
+  never_refinance: "Today's rates ~6-7%. This 2.75% loan is a keeper."
+
 # Expected total investable portfolio if on-plan (base 5% real, $50k taxable
 # saved/yr). Each Jan 1, compare your actual total to the matching year.
 target_trajectory:
