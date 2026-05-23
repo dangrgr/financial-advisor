@@ -112,6 +112,27 @@ roth_conversion_schedule:
   # 2044+: SS begins (Terri 67) -> income floor rises; slow/stop conversions to
   # avoid 32%+. Finish any remainder before RMD age 75 (Terri ~2052 / Dan ~2054).
 
+# ------------------------------------------------------------
+# EARLY-RETIREMENT WITHDRAWAL SEQUENCE (55-65) — avoid the 10% early penalty
+# RULE: traditional IRA/401k withdrawals before age 59.5 owe a 10% penalty.
+#   Dan turns 59.5 in Jan 2039; Terri ~early 2037. Bridge those years with
+#   penalty-free sources ONLY. (The projection confirms taxable alone funds
+#   ages 55-59 and is exhausted ~age 60 — so pre-tax draws naturally start
+#   AFTER 59.5. This section just makes that explicit and adds backstops.)
+# DON'Ts before 59.5: do NOT take traditional IRA/401k money for SPENDING.
+#   Roth CONVERSIONS are fine (taxed, not penalized) — just don't spend the
+#   converted dollars within 5 yrs while under 59.5.
+early_withdrawal_sequence:
+  ages_55_to_59_5:              # 2034 - ~2039, penalty-free sources only
+    primary: "Taxable brokerage (Vanguard 7157). No penalty ever; only cap-gains tax. Covers ages 55-59 per the model. Spending it down also keeps MAGI low for cheap Roth conversions."
+    backup_1: "Roth contributions/basis — withdrawable anytime tax- & penalty-free (leave earnings untouched)."
+    backup_2: "Rule of 55 on the VOLEON 401k — separating from Voleon in the year you turn 55 makes THAT plan's withdrawals penalty-free at 55. Only Voleon qualifies (eBay/Empower are prior employers). Requires leaving funds in the Voleon plan (don't roll to IRA) and the plan allowing partial distributions."
+    last_resort: "72(t)/SEPP from an IRA (rigid 5-yr schedule). Unlikely to be needed given the taxable bridge."
+    voleon_decision: "Tension: Rule of 55 needs Voleon kept in-plan; converting Voleon needs it rolled to an IRA. Default = roll to IRA and convert (taxable bridge covers spending), but you may keep it in-plan as penalty-free backstop liquidity."
+  ages_59_5_to_65:             # ~2039 - 2044
+    primary: "Penalty gone. Continue taxable (drained ~60), then traditional/401k — which also keeps filling the 22% bracket pre-RMD. Preserve Roth for last."
+    note: "Health-insurance bridge ($15k/person) runs until each turns 65 (Medicare)."
+
 # Expected total investable portfolio if on-plan (base 5% real, $50k taxable
 # saved/yr). Each Jan 1, compare your actual total to the matching year.
 target_trajectory:

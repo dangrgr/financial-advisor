@@ -59,6 +59,19 @@ Note: **Voleon (7960) is your current 401k** — pre-tax, but convertible only a
 
 **One trade-off:** big conversions raise MAGI and can forfeit ACA health subsidies pre-65. Given the size of your pre-tax pile and that you've budgeted full-freight health, filling the 22% bracket beats chasing subsidies — but if you'd rather keep premiums subsidized, cap conversions at the top of 12% (~$97k/yr) instead. Watch IRMAA (2-year lookback) and Colorado's ~4.4% state tax on each conversion.
 
+## Which accounts to live from (55–65) — avoiding the 10% early penalty
+
+Traditional IRA/401k withdrawals before **age 59½** owe a 10% penalty (Dan hits 59½ in Jan 2039; Terri ~early 2037). The good news: the projection shows your **taxable brokerage alone funds ages 55–59 and runs out right around age 60** — so pre-tax withdrawals naturally begin *after* the penalty window. Sequence it deliberately:
+
+| Ages | Spend from | Backstops | Don't |
+|---|---|---|---|
+| **55–59½** (2034–~2039) | **Taxable brokerage** (~$624k at retirement; lasts to ~60). Doubles as keeping MAGI low for cheap conversions. | Roth contributions/basis (tax- & penalty-free); **Rule of 55** on the Voleon 401k | **No traditional IRA/401k withdrawals for spending** (10% penalty). Conversions are fine. |
+| **59½–65** (2039–2044) | Taxable (drained ~60), then traditional/401k — also keeps filling the 22% bracket pre-RMD | Roth (preserve for last) | — |
+
+**Rule of 55:** because you separate from Voleon in the year you turn 55, that 401k's withdrawals are penalty-free at 55 — but *only* Voleon (eBay/Empower are prior employers), and *only* if you leave the money in that plan (don't roll it to an IRA) and the plan allows partial distributions. This is your penalty-free backstop if taxable runs short. Trade-off: keeping Voleon in-plan for Rule of 55 conflicts with rolling it to an IRA to convert it — since taxable covers the bridge, the default is roll-and-convert, but you can keep it in-plan as insurance.
+
+**72(t)/SEPP** (a rigid equal-payment IRA schedule) is the last resort — you almost certainly won't need it given the taxable bridge.
+
 ## The trajectory to watch (check actual vs target each Jan 1)
 
 | Jan 1 | Dan / Terri | Target investable |
