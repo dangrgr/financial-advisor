@@ -1,0 +1,238 @@
+# ============================================================
+# RETIREMENT PLAN — Dan & Terri Grindall
+# GOAL: retire on Dan's 55th birthday (2034-07-18), spend $12-14k/mo.
+#
+# HOW TO USE THIS FILE
+#   Every Jan 1: go to the matching entry under `checkpoints`, fill in
+#   each `actual` / null field from the source noted, then compare your
+#   `balances.total_investable` to `target_total_investable`. We review
+#   the variance together and confirm we're on-track (or adjust the plan).
+#
+#   All dollar figures are in TODAY'S DOLLARS (real terms) unless noted.
+#   Re-run the model anytime:  python3 retirement_projection.py
+# ============================================================
+
+meta:
+  plan_name: "55th Birthday Retirement"
+  created: 2026-05-23
+  last_reviewed: 2026-05-23
+  target_retirement_date: 2034-07-18
+  target_retirement_age_dan: 55
+  plan_horizon_to_age_dan: 95
+  spend_goal_monthly: [12000, 14000]            # the goal you chose
+  spend_goal_planning_midpoint_annual: 156000   # $13k/mo, planning anchor
+
+people:
+  dan:
+    birth_date: 1979-07-18
+    age_at_2026: 47
+    ssa_today_dollars_per_month:                # from ssa.gov
+      at_62: 2851
+      at_67_FRA: 4223
+      at_70: 5266
+  terri:
+    birth_date: 1977            # CONFIRM exact date
+    age_at_2026: 49
+    ssa_today_dollars_per_month: # CONFIRM at her ssa.gov (currently estimated ~2/3 of Dan)
+      at_62: null
+      at_67_FRA: 2815
+      at_70: null
+
+assumptions:
+  real_return_base: 0.05        # nominal ~8% minus ~3% inflation
+  real_return_stress: 0.04      # proxy for a poor-returns / sequence-risk world
+  inflation: 0.03
+  ss_claim_age: 67
+  ss_benefit_haircut: 0.0       # set 0.20 to stress a 20% Social Security cut
+  health_insurance_bridge_per_person_pre65: 15000  # private coverage until age 65
+  retirement_tax_rates:
+    tax_deferred_withdrawal: 0.12
+    taxable_gains: 0.075
+    social_security: 0.10
+
+planned_contributions_per_year: # what the plan assumes you invest (today's $)
+  k401_employee: 24000          # rises to ~31500 at age 50+ (catch-up)
+  k401_employer_match: 8880     # 4% of $222k base
+  ira_dan_backdoor_roth: 7000   # rises to 8000 at 50+
+  ira_terri_backdoor_roth: 7000 # ACTION: switch Terri from non-deductible Trad -> backdoor Roth
+  taxable_brokerage: 50000      # surplus bonus invested; the #1 lever
+
+# Expected total investable portfolio if on-plan (base 5% real, $50k taxable
+# saved/yr). Each Jan 1, compare your actual total to the matching year.
+target_trajectory:
+  2026-01-01: 1294336           # baseline / starting point
+  2027-01-01: 1460777
+  2028-01-01: 1636590
+  2029-01-01: 1821193
+  2030-01-01: 2023952
+  2031-01-01: 2236848
+  2032-01-01: 2460390
+  2033-01-01: 2695108
+  2034-01-01: 2941563
+  2034-07-18: 2918371           # ~retirement (after partial-year drawdown)
+
+# Spend-goal feasibility retiring at 55 (from retirement_projection.py):
+spend_feasibility_at_55:
+  "$12,000/mo": "SAFE in both base and stress (4% real) — robust floor"
+  "$13,000/mo": "Safe in base; fails stress — needs ~5% real returns or upside"
+  "$14,000/mo": "Safe in base; relies on returns plus the upside buffers below"
+
+# Upside NOT counted in target_trajectory — every item makes the plan safer:
+upside_buffers:
+  college_529: "~$115k + $500/mo already funds the kids' college, off-balance-sheet"
+  cash_reserve: "~$120k + incoming $50k gift from Terri's parents"
+  inheritance: "parents 75-80; would pay off mortgage / add to portfolio (timing unknown)"
+  mortgage_payoff: "P&I ~$1,688/mo drops off ~2049 (or earlier via inheritance)"
+  delayed_ss: "claiming at 70 = Dan $5,266/mo vs $4,223 at 67"
+  part_time_income: "any earned income shortens the pre-67 bridge"
+
+# ============================================================
+# ANNUAL CHECK-IN LOG — fill the null fields every Jan 1.
+# SOURCES: agi = Form 1040 line 11 | balances = Rocket Money / Vanguard /
+# Schwab / Fidelity | ssa = ssa.gov | mortgage_balance = servicer statement.
+# total_investable = tax_deferred + roth + taxable (exclude cash & 529).
+# ============================================================
+checkpoints:
+
+  - date: 2026-01-01
+    status: BASELINE
+    dan_age: 47
+    terri_age: 49
+    income:
+      base_salary: 222000        # raise effective 2026-05-01 (was 185000)
+      bonus_gross: 150000
+      agi: null                  # fill from tax return
+    contributions_actual:
+      k401_employee: null
+      k401_match: null
+      ira_dan: null
+      ira_terri: null
+      taxable: null
+      total: null
+    balances:
+      tax_deferred: 794274
+      roth: 327070
+      taxable: 172992
+      total_investable: 1294336
+      cash: 83725
+      college_529: 115370
+    ssa_latest:
+      dan_at_67: 4223
+      terri_at_67: 2815          # estimate — confirm
+    mortgage_balance: 340657
+    target_total_investable: 1294336
+    variance_vs_target: 0
+    on_track: true
+    notes: "Baseline from May 2026 screenshots. New comp effective May 1."
+
+  - date: 2027-01-01
+    status: PLANNED
+    dan_age: 48
+    terri_age: 50                # Terri turns 50 -> IRA catch-up ($8k)
+    income: {base_salary: null, bonus_gross: null, agi: null}
+    contributions_actual: {k401_employee: null, k401_match: null, ira_dan: null, ira_terri: null, taxable: null, total: null}
+    balances: {tax_deferred: null, roth: null, taxable: null, total_investable: null, cash: null, college_529: null}
+    ssa_latest: {dan_at_67: null, terri_at_67: null}
+    mortgage_balance: null
+    target_total_investable: 1460777
+    variance_vs_target: null
+    on_track: null
+    notes: ""
+
+  - date: 2028-01-01
+    status: PLANNED
+    dan_age: 49
+    terri_age: 51
+    income: {base_salary: null, bonus_gross: null, agi: null}
+    contributions_actual: {k401_employee: null, k401_match: null, ira_dan: null, ira_terri: null, taxable: null, total: null}
+    balances: {tax_deferred: null, roth: null, taxable: null, total_investable: null, cash: null, college_529: null}
+    ssa_latest: {dan_at_67: null, terri_at_67: null}
+    mortgage_balance: null
+    target_total_investable: 1636590
+    variance_vs_target: null
+    on_track: null
+    notes: ""
+
+  - date: 2029-01-01
+    status: PLANNED
+    dan_age: 50                  # Dan turns 50 -> 401k catch-up (~$31.5k) + IRA $8k
+    terri_age: 52
+    income: {base_salary: null, bonus_gross: null, agi: null}
+    contributions_actual: {k401_employee: null, k401_match: null, ira_dan: null, ira_terri: null, taxable: null, total: null}
+    balances: {tax_deferred: null, roth: null, taxable: null, total_investable: null, cash: null, college_529: null}
+    ssa_latest: {dan_at_67: null, terri_at_67: null}
+    mortgage_balance: null
+    target_total_investable: 1821193
+    variance_vs_target: null
+    on_track: null
+    notes: ""
+
+  - date: 2030-01-01
+    status: PLANNED
+    dan_age: 51
+    terri_age: 53
+    income: {base_salary: null, bonus_gross: null, agi: null}
+    contributions_actual: {k401_employee: null, k401_match: null, ira_dan: null, ira_terri: null, taxable: null, total: null}
+    balances: {tax_deferred: null, roth: null, taxable: null, total_investable: null, cash: null, college_529: null}
+    ssa_latest: {dan_at_67: null, terri_at_67: null}
+    mortgage_balance: null
+    target_total_investable: 2023952
+    variance_vs_target: null
+    on_track: null
+    notes: ""
+
+  - date: 2031-01-01
+    status: PLANNED
+    dan_age: 52
+    terri_age: 54
+    income: {base_salary: null, bonus_gross: null, agi: null}
+    contributions_actual: {k401_employee: null, k401_match: null, ira_dan: null, ira_terri: null, taxable: null, total: null}
+    balances: {tax_deferred: null, roth: null, taxable: null, total_investable: null, cash: null, college_529: null}
+    ssa_latest: {dan_at_67: null, terri_at_67: null}
+    mortgage_balance: null
+    target_total_investable: 2236848
+    variance_vs_target: null
+    on_track: null
+    notes: ""
+
+  - date: 2032-01-01
+    status: PLANNED
+    dan_age: 53
+    terri_age: 55
+    income: {base_salary: null, bonus_gross: null, agi: null}
+    contributions_actual: {k401_employee: null, k401_match: null, ira_dan: null, ira_terri: null, taxable: null, total: null}
+    balances: {tax_deferred: null, roth: null, taxable: null, total_investable: null, cash: null, college_529: null}
+    ssa_latest: {dan_at_67: null, terri_at_67: null}
+    mortgage_balance: null
+    target_total_investable: 2460390
+    variance_vs_target: null
+    on_track: null
+    notes: ""
+
+  - date: 2033-01-01
+    status: PLANNED
+    dan_age: 54
+    terri_age: 56
+    income: {base_salary: null, bonus_gross: null, agi: null}
+    contributions_actual: {k401_employee: null, k401_match: null, ira_dan: null, ira_terri: null, taxable: null, total: null}
+    balances: {tax_deferred: null, roth: null, taxable: null, total_investable: null, cash: null, college_529: null}
+    ssa_latest: {dan_at_67: null, terri_at_67: null}
+    mortgage_balance: null
+    target_total_investable: 2695108
+    variance_vs_target: null
+    on_track: null
+    notes: ""
+
+  - date: 2034-01-01
+    status: GO/NO-GO          # final check ~6 months before retirement
+    dan_age: 54
+    terri_age: 56
+    income: {base_salary: null, bonus_gross: null, agi: null}
+    contributions_actual: {k401_employee: null, k401_match: null, ira_dan: null, ira_terri: null, taxable: null, total: null}
+    balances: {tax_deferred: null, roth: null, taxable: null, total_investable: null, cash: null, college_529: null}
+    ssa_latest: {dan_at_67: null, terri_at_67: null}
+    mortgage_balance: null
+    target_total_investable: 2941563
+    variance_vs_target: null
+    on_track: null
+    notes: "Final go/no-go. If total_investable >= ~$2.5M, $12k/mo is safe; >= ~$2.9M supports $13-14k/mo in the base case."
