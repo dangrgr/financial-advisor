@@ -184,6 +184,48 @@ upside_buffers:
   part_time_income: "any earned income shortens the pre-67 bridge"
 
 # ============================================================
+# REVIEW WATCHLIST — open questions to revisit each Jan 1 (most material first).
+# NOT blockers; the plan is conservatively framed. Flip `status` as resolved.
+# ============================================================
+review_watchlist:
+  - id: conversion_taxes
+    priority: 1
+    issue: "Roth-conversion taxes likely understated. 'Fill the 22% bracket' double-counts once post-59.5 pre-tax SPENDING also fills the low brackets; real blended rate ~18-22% (fed + 3.8% NIIT in big years + CO 4.4%), not 12-17%."
+    why: "Thins the cushion; argues for leaning to the $12-13k/mo end."
+    action: "At the first retired review, build a representative conversion-year tax worksheet (fed + NIIT + CO); size conversions NET of other taxable income."
+    status: open
+  - id: rmd_drain
+    priority: 2
+    issue: "Pre-tax pile (~$946k now -> ~$1.4M by 2034) may not fully drain via 22%-only conversions before RMDs at 75 (Terri ~2052 / Dan ~2054)."
+    why: "Surviving pre-tax balance forces large RMDs + widow's-penalty taxes."
+    action: "Project pre-tax balance at age 75 after planned conversions + growth; if > ~$1M, deliberately convert into the 24% bracket some years."
+    status: open
+  - id: health_aca
+    priority: 3
+    issue: "$15k/person health bridge is a placeholder; unsubsidized CO silver for 55+ may run $18-24k/person by 2034. Large conversions also forfeit ACA subsidies."
+    why: "Understated health cost directly raises the pre-65 spend need."
+    action: "Near the date, price actual CO marketplace 55-yo silver plans + inflate; treat as a hard line."
+    status: open
+  - id: terri_ss_survivor
+    priority: 4
+    issue: "Terri's $2,815/mo is a 2/3-of-Dan ESTIMATE (unconfirmed). Survivor case not modeled: at first death the household keeps only the larger benefit and shifts to single brackets."
+    why: "Affects the income floor and the widow's-penalty tax math."
+    action: "Pull Terri's real ssa.gov estimate; sanity-check a survivor-income scenario (Dan's benefit alone, single brackets)."
+    status: open
+  - id: taxable_basis
+    priority: 5
+    issue: "Bridge cap-gains modeled at 7.5% effective, assuming ~50% basis in account 7157."
+    why: "If embedded gains are higher, the bridge drawdown costs more tax."
+    action: "Pull actual cost basis from Vanguard for 7157; harvest gains in low-conversion years."
+    status: open
+  - id: college_timing
+    priority: 6
+    issue: "Older kid's freshman year (~2030) is PRE-retirement; tuition overlaps the high-earning + conversion years. 529s ($115k + $500/mo) should cover but unverified."
+    why: "A 529 shortfall would raid the taxable bridge fund."
+    action: "Project each 529 balance vs. 4-year cost-of-attendance at matriculation; top up now if short."
+    status: open
+
+# ============================================================
 # ANNUAL CHECK-IN LOG — fill the null fields every Jan 1.
 # SOURCES: agi = Form 1040 line 11 | balances = Rocket Money / Vanguard /
 # Schwab / Fidelity | ssa = ssa.gov | mortgage_balance = servicer statement.
