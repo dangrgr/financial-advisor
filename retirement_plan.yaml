@@ -64,7 +64,7 @@ planned_contributions_per_year: # what the plan assumes you invest (today's $)
 # ROTH CONVERSION STRATEGY — Terri's pre-tax IRA + the broader pre-tax pile
 # WHY: Terri can't do clean backdoor Roth (large pre-tax IRA -> pro-rata rule);
 #   Dan has $0 trad-IRA basis so his backdoor stays clean. Separately, the whole
-#   pre-tax pile (~$794k now, both spouses) compounds to a large RMD at age 75
+#   pre-tax pile (~$946k now, both spouses) compounds to a large RMD at age 75
 #   (Terri ~2052 / Dan ~2054) stacked on ~$84k SS -> 32%+ brackets, IRMAA
 #   surcharges, and a severe widow's-penalty for the survivor (single brackets).
 # WHEN: NOT in working years 2026-2033 (you're in 24-32% now). Begin at
@@ -82,10 +82,11 @@ planned_contributions_per_year: # what the plan assumes you invest (today's $)
 # WATCH: ACA MAGI subsidy cliff (pre-65), IRMAA (2-yr lookback before 65), NIIT,
 #   Colorado ~4.4% state tax on each conversion.
 roth_conversion_strategy:
-  terri_pretax_ira_to_convert:    # CONFIRMED: both are Terri's traditional IRAs (Charles Schwab)
+  terri_pretax_ira_to_convert:    # CONFIRMED: Terri's traditional IRAs
     schwab_roll_over_5186: 179386
     schwab_rollover_ira_8797: 47103
-    confirmed_total: 226489
+    rollover_ira_brokerage_x36: 152222  # off Rocket Money (her separate login)
+    confirmed_total: 378711
   dan_pretax_401ks_convertible_after_2034: # roll to IRA after he separates, then convert
     ebay_fidelity_8049: 344196    # former employer (rollable now)
     empower_0101: 126944          # former employer (rollable now)
@@ -99,9 +100,9 @@ roth_conversion_strategy:
 # Conversion log — fill `actual_converted` each year once retired.
 roth_conversion_schedule:
   - {year: 2034, dan_age: 55, target: "top of 22% (~$207k)", planned: "~$190k", actual_converted: null, notes: "Start with Terri's IRA"}
-  - {year: 2035, dan_age: 56, target: "top of 22% (~$207k)", planned: "~$190k", actual_converted: null, notes: "Terri's IRA (~$226k) drained ~here; switch to Dan's eBay/Empower 401k money"}
+  - {year: 2035, dan_age: 56, target: "top of 22% (~$207k)", planned: "~$190k", actual_converted: null, notes: "Still draining Terri's IRAs (~$379k now -> ~$559k by 2034)"}
   - {year: 2036, dan_age: 57, target: "top of 22% (~$207k)", planned: "~$190k", actual_converted: null, notes: ""}
-  - {year: 2037, dan_age: 58, target: "top of 22% (~$207k)", planned: "~$190k", actual_converted: null, notes: ""}
+  - {year: 2037, dan_age: 58, target: "top of 22% (~$207k)", planned: "~$190k", actual_converted: null, notes: "Terri's IRAs drained ~here; switch to Dan's eBay/Empower 401k money"}
   - {year: 2038, dan_age: 59, target: "top of 22% (~$207k)", planned: "~$190k", actual_converted: null, notes: "Voleon (Dan's former-current 401k) now rolled to IRA & convertible"}
   - {year: 2039, dan_age: 60, target: "top of 22% (~$207k)", planned: "~$190k", actual_converted: null, notes: ""}
   - {year: 2040, dan_age: 61, target: "top of 22% (~$207k)", planned: "~$190k", actual_converted: null, notes: ""}
@@ -114,16 +115,16 @@ roth_conversion_schedule:
 # Expected total investable portfolio if on-plan (base 5% real, $50k taxable
 # saved/yr). Each Jan 1, compare your actual total to the matching year.
 target_trajectory:
-  2026-01-01: 1294336           # baseline / starting point
-  2027-01-01: 1460777
-  2028-01-01: 1636590
-  2029-01-01: 1821193
-  2030-01-01: 2023952
-  2031-01-01: 2236848
-  2032-01-01: 2460390
-  2033-01-01: 2695108
-  2034-01-01: 2941563
-  2034-07-18: 2918371           # ~retirement (after partial-year drawdown)
+  2026-01-01: 1446558           # baseline / starting point
+  2027-01-01: 1620610
+  2028-01-01: 1804414
+  2029-01-01: 1997409
+  2030-01-01: 2208979
+  2031-01-01: 2431126
+  2032-01-01: 2664382
+  2033-01-01: 2909300
+  2034-01-01: 3166464
+  2034-07-18: 3154517           # ~retirement (after partial-year drawdown)
 
 # Spend-goal feasibility retiring at 55 (from retirement_projection.py):
 spend_feasibility_at_55:
@@ -164,17 +165,17 @@ checkpoints:
       taxable: null
       total: null
     balances:
-      tax_deferred: 794274
+      tax_deferred: 946496
       roth: 327070
       taxable: 172992
-      total_investable: 1294336
+      total_investable: 1446558
       cash: 83725
       college_529: 115370
     ssa_latest:
       dan_at_67: 4223
       terri_at_67: 2815          # estimate — confirm
     mortgage_balance: 340657
-    target_total_investable: 1294336
+    target_total_investable: 1446558
     variance_vs_target: 0
     on_track: true
     notes: "Baseline from May 2026 screenshots. New comp effective May 1."
@@ -188,7 +189,7 @@ checkpoints:
     balances: {tax_deferred: null, roth: null, taxable: null, total_investable: null, cash: null, college_529: null}
     ssa_latest: {dan_at_67: null, terri_at_67: null}
     mortgage_balance: null
-    target_total_investable: 1460777
+    target_total_investable: 1620610
     variance_vs_target: null
     on_track: null
     notes: ""
@@ -202,7 +203,7 @@ checkpoints:
     balances: {tax_deferred: null, roth: null, taxable: null, total_investable: null, cash: null, college_529: null}
     ssa_latest: {dan_at_67: null, terri_at_67: null}
     mortgage_balance: null
-    target_total_investable: 1636590
+    target_total_investable: 1804414
     variance_vs_target: null
     on_track: null
     notes: ""
@@ -216,7 +217,7 @@ checkpoints:
     balances: {tax_deferred: null, roth: null, taxable: null, total_investable: null, cash: null, college_529: null}
     ssa_latest: {dan_at_67: null, terri_at_67: null}
     mortgage_balance: null
-    target_total_investable: 1821193
+    target_total_investable: 1997409
     variance_vs_target: null
     on_track: null
     notes: ""
@@ -230,7 +231,7 @@ checkpoints:
     balances: {tax_deferred: null, roth: null, taxable: null, total_investable: null, cash: null, college_529: null}
     ssa_latest: {dan_at_67: null, terri_at_67: null}
     mortgage_balance: null
-    target_total_investable: 2023952
+    target_total_investable: 2208979
     variance_vs_target: null
     on_track: null
     notes: ""
@@ -244,7 +245,7 @@ checkpoints:
     balances: {tax_deferred: null, roth: null, taxable: null, total_investable: null, cash: null, college_529: null}
     ssa_latest: {dan_at_67: null, terri_at_67: null}
     mortgage_balance: null
-    target_total_investable: 2236848
+    target_total_investable: 2431126
     variance_vs_target: null
     on_track: null
     notes: ""
@@ -258,7 +259,7 @@ checkpoints:
     balances: {tax_deferred: null, roth: null, taxable: null, total_investable: null, cash: null, college_529: null}
     ssa_latest: {dan_at_67: null, terri_at_67: null}
     mortgage_balance: null
-    target_total_investable: 2460390
+    target_total_investable: 2664382
     variance_vs_target: null
     on_track: null
     notes: ""
@@ -272,7 +273,7 @@ checkpoints:
     balances: {tax_deferred: null, roth: null, taxable: null, total_investable: null, cash: null, college_529: null}
     ssa_latest: {dan_at_67: null, terri_at_67: null}
     mortgage_balance: null
-    target_total_investable: 2695108
+    target_total_investable: 2909300
     variance_vs_target: null
     on_track: null
     notes: ""
@@ -286,7 +287,7 @@ checkpoints:
     balances: {tax_deferred: null, roth: null, taxable: null, total_investable: null, cash: null, college_529: null}
     ssa_latest: {dan_at_67: null, terri_at_67: null}
     mortgage_balance: null
-    target_total_investable: 2941563
+    target_total_investable: 3166464
     variance_vs_target: null
     on_track: null
-    notes: "Final go/no-go. If total_investable >= ~$2.5M, $12k/mo is safe; >= ~$2.9M supports $13-14k/mo in the base case."
+    notes: "Final go/no-go. If total_investable >= ~$2.7M, $12k/mo is safe even in the stress case; >= ~$3.1M comfortably supports $13-14k/mo in the base case."

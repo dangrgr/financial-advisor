@@ -2,7 +2,7 @@
 
 **The goal:** both retired by **July 18, 2034** (Dan 55, Terri 57), spending **$12,000–$14,000/month** in today's dollars, comfortable with travel, and money that lasts to age 95.
 
-**The verdict:** On plan, this is a **low-risk, comfortable target.** Retiring at 55 you'd have ~$2.9M invested, never dip below ~$2.6M even mid-retirement, and—if returns merely cooperate—die with $7M+. Even a poor-returns world (4% real) still works at the $12k/mo level.
+**The verdict:** On plan, this is a **low-risk, comfortable target.** Retiring at 55 you'd have ~$3.15M invested, never dip below ~$3.0M even mid-retirement, and—if returns merely cooperate—die with $9M+. Even a poor-returns world (4% real) bottoms at ~$2.0M and still supports $12k/mo.
 
 ---
 
@@ -10,10 +10,10 @@
 
 | Bucket | Balance | Notes |
 |---|---|---|
-| Tax-deferred (401ks, rollover/trad IRAs) | $794,274 | taxed as income on withdrawal |
+| Tax-deferred (401ks, rollover/trad IRAs) | $946,496 | incl. Terri's 3rd IRA ($152k, off Rocket Money); taxed as income |
 | Roth (tax-free) | $327,070 | |
 | Taxable brokerage | $172,992 | Vanguard joint 7157 |
-| **Total investable** | **$1,294,336** | the number we track |
+| **Total investable** | **$1,446,558** | the number we track |
 | Cash | ~$84k (+$50k gift incoming) | buffer, not counted |
 | 529 college | $115,370 + $500/mo | funds kids' college, off-balance-sheet |
 
@@ -33,19 +33,19 @@
 
 | Monthly spend | Base case (5% real) | Stress (4% real, smaller bonus) |
 |---|---|---|
-| **$12,000** | ✅ dies with ~$4.2M | ✅ just makes it |
-| **$13,000** | ✅ dies with ~$2.6M | ⚠️ needs ~5% real or upside |
-| **$14,000** | ✅ dies with ~$1.0M | ⚠️ relies on upside buffers |
+| **$12,000** | ✅ dies with ~$5.8M | ✅ dies with ~$0.9M |
+| **$13,000** | ✅ dies with ~$4.1M | ⚠️ needs ~5% real or upside |
+| **$14,000** | ✅ dies with ~$2.5M | ⚠️ relies on upside buffers |
 
-**Plan around $12k/mo as guaranteed-safe, treat $13–14k/mo as the reward if returns cooperate** — and they likely will, because none of the upside below is counted: 529s already cover college, ~$170k cash, a parental inheritance (paying off the mortgage), the mortgage dropping off ~2049 anyway, and the option to delay SS to 70 ($5,266/mo).
+**Plan around $12k/mo as guaranteed-safe, treat $13–14k/mo as the reward if returns cooperate** — the max sustainable spend at 55 is ~$12,750/mo in the conservative world and ~$15,500/mo in the base case. And none of the upside below is counted: 529s already cover college, ~$134k cash (incl. the $50k gift), a parental inheritance (paying off the mortgage), the mortgage dropping off ~2049 anyway, and the option to delay SS to 70 ($5,266/mo).
 
 ---
 
 ## Roth conversion strategy (Terri's IRA + the pre-tax pile)
 
-Terri can't do a clean backdoor Roth — her two Charles Schwab traditional IRAs (**$226,489**) trigger the **pro-rata rule**, taxing most of any conversion. The fix is **scheduled Roth conversions in your low-income early-retirement years**, not a backdoor.
+Terri can't do a clean backdoor Roth — her three traditional IRAs (**$378,711** — two Charles Schwab rollovers + a third Rollover IRA) trigger the **pro-rata rule**, taxing most of any conversion. The fix is **scheduled Roth conversions in your low-income early-retirement years**, not a backdoor.
 
-**Why bother:** your combined pre-tax pile (~$794k now — Terri's $226k IRAs plus your eBay $344k + Empower $127k + Voleon $97k 401ks) compounds into large RMDs at age 75 (Terri ~2052 / Dan ~2054), stacked on ~$84k of Social Security — that pushes you into 32%+ brackets, triggers IRMAA Medicare surcharges, and creates a brutal "widow's penalty" for whichever of you is left filing single. Converting early smooths all of that.
+**Why bother:** your combined pre-tax pile (~$946k now — Terri's $379k IRAs plus your eBay $344k + Empower $127k + Voleon $97k 401ks) compounds into large RMDs at age 75 (Terri ~2052 / Dan ~2054), stacked on ~$84k of Social Security — that pushes you into 32%+ brackets, triggers IRMAA Medicare surcharges, and creates a brutal "widow's penalty" for whichever of you is left filing single. Converting early smooths all of that.
 
 Note: **Voleon (7960) is your current 401k** — pre-tax, but convertible only after you separate at retirement in 2034. eBay and Empower are former-employer 401ks (rollable now). So in the window, convert Terri's IRAs first, then your 401k money once it's rolled to an IRA.
 
@@ -63,15 +63,15 @@ Note: **Voleon (7960) is your current 401k** — pre-tax, but convertible only a
 
 | Jan 1 | Dan / Terri | Target investable |
 |---|---|---|
-| 2026 | 47 / 49 | $1.29M (baseline) |
-| 2027 | 48 / 50 | $1.46M |
-| 2028 | 49 / 51 | $1.64M |
-| 2029 | 50 / 52 | $1.82M |
-| 2030 | 51 / 53 | $2.02M |
-| 2031 | 52 / 54 | $2.24M |
-| 2032 | 53 / 55 | $2.46M |
-| 2033 | 54 / 56 | $2.70M |
-| 2034 | 54 / 56 | $2.94M → **retire July 18** |
+| 2026 | 47 / 49 | $1.45M (baseline) |
+| 2027 | 48 / 50 | $1.62M |
+| 2028 | 49 / 51 | $1.80M |
+| 2029 | 50 / 52 | $2.00M |
+| 2030 | 51 / 53 | $2.21M |
+| 2031 | 52 / 54 | $2.43M |
+| 2032 | 53 / 55 | $2.66M |
+| 2033 | 54 / 56 | $2.91M |
+| 2034 | 54 / 56 | $3.17M → **retire July 18** |
 
 If your real balance is **at or above** the target line each Jan 1, you're on track. Below it two years running = we revisit spend, savings, or date.
 

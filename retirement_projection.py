@@ -28,7 +28,8 @@ PLAN_TO_DAN_AGE = 95          # model through Dan age 95 (Terri 97)
 # Starting investable balances by tax treatment (May 2026 screenshots).
 # Excludes: 529s ($115k), kids' UTMA ($3.6k), and ~$120k cash buffer
 # (incl. incoming $50k gift). All of those are UPSIDE not modeled here.
-START_TAX_DEFERRED = 794_274   # old 401ks + rollover/trad IRAs (taxed at withdrawal)
+START_TAX_DEFERRED = 946_496   # old 401ks + rollover/trad IRAs (taxed at withdrawal)
+                               # = $794,274 (Rocket Money) + $152,222 Terri IRA (...36, off-RM)
 START_ROTH         = 327_070   # Roth IRAs (tax-free)
 START_TAXABLE      = 172_992   # Vanguard joint brokerage 7157
 
