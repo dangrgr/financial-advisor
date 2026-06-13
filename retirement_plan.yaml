@@ -15,7 +15,9 @@
 meta:
   plan_name: "55th Birthday Retirement"
   created: 2026-05-23
-  last_reviewed: 2026-05-23
+  last_reviewed: 2026-06-13
+  validation: "test_retirement_model.py pins every number in this file to the
+    model (run: python3 -m unittest). Green = no drift. See MODEL_VALIDATION.md."
   target_retirement_date: 2034-07-18
   target_retirement_age_dan: 55
   plan_horizon_to_age_dan: 95
@@ -62,8 +64,9 @@ planned_contributions_per_year: # what the plan assumes you invest (today's $)
                                 # KEY LEVER: this also sizes the penalty-free 55-59.5 bridge.
                                 # Target ~$50k surplus (~$57k total). Floor ~$30k: below that the
                                 # taxable bucket runs dry before 59.5. See early_withdrawal_sequence.
-                                #   ~$50k surplus -> taxable ~$707k @2034, bridge to age 60 (clean)
-                                #   ~$30k surplus -> taxable ~$497k @2034, bridge only to age 59
+                                #   ~$50k surplus -> taxable ~$836k @2034, bridge into the Dan-59 yr
+                                #   ~$30k surplus -> taxable ~$635k @2034, bridge into the Dan-58 yr
+                                # (figures model-verified Jun 2026; pinned in tests)
 
 # ------------------------------------------------------------
 # ROTH CONVERSION STRATEGY — Terri's pre-tax IRA + the broader pre-tax pile
@@ -194,12 +197,20 @@ review_watchlist:
     why: "Thins the cushion; argues for leaning to the $12-13k/mo end."
     action: "At the first retired review, build a representative conversion-year tax worksheet (fed + NIIT + CO); size conversions NET of other taxable income."
     status: open
+    note_2026_06: "QUANTIFIED via --conversions ($190k/yr @ 19%): honest base-case
+      ending is ~$3.43M vs the naive $4.02M. Strategy confirmed value-positive
+      (+$0.2-0.7M vs realistic no-conversion worlds at 18-22% withdrawal rates),
+      and the $12k stress floor still survives with drag included (+$549k).
+      Bracket-accurate worksheet at first retired review still worthwhile."
   - id: rmd_drain
     priority: 2
     issue: "Pre-tax pile (~$946k now -> ~$1.4M by 2034) may not fully drain via 22%-only conversions before RMDs at 75 (Terri ~2052 / Dan ~2054)."
     why: "Surviving pre-tax balance forces large RMDs + widow's-penalty taxes."
     action: "Project pre-tax balance at age 75 after planned conversions + growth; if > ~$1M, deliberately convert into the 24% bracket some years."
     status: open
+    note_2026_06: "Modeled: with --conversions the pre-tax pile is fully drained
+      by Dan 67 on the base path — RMD problem eliminated IF the conversion
+      schedule is executed. Stays open only as an execution check."
   - id: health_aca
     priority: 3
     issue: "$15k/person health bridge is a placeholder; unsubsidized CO silver for 55+ may run $18-24k/person by 2034. Large conversions also forfeit ACA subsidies."
@@ -223,6 +234,21 @@ review_watchlist:
     issue: "Older kid's freshman year (~2030) is PRE-retirement; tuition overlaps the high-earning + conversion years. 529s ($115k + $500/mo) should cover but unverified."
     why: "A 529 shortfall would raid the taxable bridge fund."
     action: "Project each 529 balance vs. 4-year cost-of-attendance at matriculation; top up now if short."
+    status: open
+  - id: sequence_risk_glidepath
+    priority: 2
+    issue: "NEW (Jun 2026 Monte Carlo): with static $13k/mo spending and
+      all-equity volatility (16%), success is ~61%; at 60/40-like vol (10%)
+      it's ~71%; a 10% spend cut adds ~9 points. Failures cluster around
+      Dan age ~72 (first ~15 retirement years). The plan has no glidepath."
+    why: "Volatility near the retirement date is now quantified as a lever
+      roughly as powerful as $1k/mo of spend — and currently unmanaged
+      (portfolio is heavily VGT/tech-tilted equity)."
+    action: "Design a bond-tent/glidepath (e.g., de-risk toward ~60/40 over
+      2031-2036) and a spending guardrail rule (cut to $12k when below the
+      target trajectory) at the next annual review. Run
+      `python3 retirement_projection.py --monte-carlo 2000 --vol 0.10` to see
+      the target state."
     status: open
 
 # ============================================================
