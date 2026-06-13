@@ -24,6 +24,8 @@ Layers:
                         baseline untouched; never load-bearing.
   4c. SS CLAIM AGE    — benefit scales with claim age per SSA rules; default
                         (67 = FRA) leaves the baseline untouched.
+  4d. SAVINGS DIALS   — per-vessel contribution knobs; defaults reproduce the
+                        prior schedule exactly; vessels route to the right bucket.
   5. MONTE CARLO      — seeded reproducibility + pinned baseline result.
 """
 
@@ -35,7 +37,7 @@ from dataclasses import replace
 import retirement_projection as rp
 from retirement_projection import Params, simulate, earliest_age, \
     max_sustainable_spend, spend_feasibility_rows, monte_carlo, _draw, \
-    ss_benefit_factor
+    ss_benefit_factor, annual_contributions, bucketize, savings_schedule
 
 HERE = Path(__file__).parent
 YAML = (HERE / "retirement_plan.yaml").read_text()
@@ -415,6 +417,79 @@ class TestSSClaimAge(unittest.TestCase):
         base = Params(conversions=True, real_return=0.04, taxable_savings=30_000)
         self.assertFalse(simulate(55, params=base)[0])              # fails @67
         self.assertFalse(simulate(55, params=replace(base, ss_claim_age=70))[0])
+
+
+# ---------------------------------------------------------------------------
+# 4d. SAVINGS DIALS — per-vessel contribution knobs. Defaults must reproduce
+#     the prior hardcoded schedule exactly; each dial routes to the right bucket.
+# ---------------------------------------------------------------------------
+
+class TestSavingsDials(unittest.TestCase):
+
+    def test_default_year1_buckets_match_prior_schedule(self):
+        td, roth, tax, nd = bucketize(annual_contributions(Params(), 47, 49))
+        self.assertEqual((td, roth, tax, nd), (32_880, 7_000, 57_000, 0))
+
+    def test_default_schedule_totals(self):
+        _, totals = savings_schedule(Params(), 55)
+        self.assertEqual(totals["_total"], 824_540)
+        self.assertEqual(totals["_tax_deferred"], 300_540)
+        self.assertEqual(totals["_roth"], 61_000)
+        self.assertEqual(totals["_taxable"], 463_000)
+        self.assertEqual(totals["_nondeduct_ira"], 0)
+
+    def test_default_dials_leave_baseline_unchanged(self):
+        ok, end, _ = simulate(55, params=Params())   # all dials at default
+        self.assertTrue(ok)
+        self.assertAlmostEqual(end, 4_023_750, delta=TOL)
+
+    def test_base_salary_drives_match_and_from_base_401k(self):
+        items = annual_contributions(Params(base_salary=260_000), 47, 49)
+        self.assertAlmostEqual(items["employer_match"], 260_000 * 0.04, delta=TOL)
+        self.assertAlmostEqual(items["dan_401k_from_base"], 260_000 * 0.04, delta=TOL)
+        # employee total still capped at the IRS limit
+        self.assertAlmostEqual(items["dan_401k_from_base"] + items["dan_401k_topoff"],
+                               24_000, delta=TOL)
+
+    def test_topoff_cannot_exceed_irs_limit(self):
+        items = annual_contributions(Params(k401_topoff=999_999), 47, 49)
+        self.assertAlmostEqual(items["dan_401k_from_base"] + items["dan_401k_topoff"],
+                               24_000, delta=TOL)            # under 50
+        items50 = annual_contributions(Params(k401_topoff=999_999), 50, 52)
+        self.assertAlmostEqual(items50["dan_401k_from_base"] + items50["dan_401k_topoff"],
+                               31_500, delta=TOL)            # catch-up limit
+
+    def test_terri_solo_401k_routes_to_tax_deferred(self):
+        td0, _, tax0, _ = bucketize(annual_contributions(Params(), 47, 49))
+        td1, _, tax1, nd1 = bucketize(annual_contributions(
+            Params(terri_taxable=0.0, terri_solo_401k=8_000), 47, 49))
+        self.assertAlmostEqual(td1 - td0, 8_000, delta=TOL)   # added to tax-deferred
+        self.assertAlmostEqual(tax0 - tax1, 7_000, delta=TOL) # removed from taxable
+        self.assertEqual(nd1, 0)
+
+    def test_terri_trad_ira_routes_to_nondeduct_bucket(self):
+        _, _, _, nd = bucketize(annual_contributions(
+            Params(terri_taxable=0.0, terri_trad_ira=8_000), 47, 49))
+        self.assertAlmostEqual(nd, 8_000, delta=TOL)
+
+    def test_nondeduct_ira_basis_returns_tax_free_pinned(self):
+        # Routing Terri's $8k/yr into the non-deductible IRA vs leaving it in
+        # taxable changes the outcome (basis returns tax-free, growth taxed at
+        # ordinary). Pinned so the basis-tracking math can't silently drift.
+        _, base, _ = simulate(55, params=Params())
+        _, nd, _ = simulate(55, params=Params(terri_taxable=0.0, terri_trad_ira=8_000))
+        _, solo, _ = simulate(55, params=Params(terri_taxable=0.0, terri_solo_401k=8_000))
+        self.assertAlmostEqual(nd, 4_053_876, delta=TOL)
+        self.assertAlmostEqual(solo, 4_007_171, delta=TOL)
+        # nd-IRA (basis free) beats solo-401k (fully taxed at withdrawal) in the
+        # model's withdrawal-only view — the documented blind spot (no deduction
+        # credited going in, no pro-rata/step-up). Asserted so the caveat stays true.
+        self.assertGreater(nd, solo)
+
+    def test_more_taxable_savings_helps(self):
+        _, lo, _ = simulate(55, params=Params(taxable_savings=30_000))
+        _, hi, _ = simulate(55, params=Params(taxable_savings=70_000))
+        self.assertLess(lo, hi)
 
     def test_zero_spend_always_survives(self):
         ok, end, _ = simulate(55, params=Params(spend=0, health_per_person=0))

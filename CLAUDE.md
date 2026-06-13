@@ -94,6 +94,12 @@ Reports are written to `reviews/YYYY-MM-review.md`.
   credits/early reduction; longevity hedge, doesn't rescue the stress case), `--survivor-at AGE`,
   `--side-income 50000` (gap-year side hustle — pure upside, never depended on; see
   `preretirement_income_strategy.md`), `--monte-carlo 2000`, `--solve-spend`
+- Savings dials (year-over-year planning): per-vessel contribution knobs — `--base-salary`,
+  `--k401-pct`, `--match-pct`, `--k401-topoff`, `--dan-roth`, `--terri-taxable`,
+  `--terri-solo-401k` (deductible), `--terri-trad-ira` (non-deductible). `--savings-table`
+  prints the itemized year-by-year schedule. Defaults reproduce the pinned baseline exactly.
+  Caveat: the model taxes only at withdrawal, so it shows allocation/longevity — not
+  deductible-vs-non-deductible arbitrage (that's a CPA question; flagged in the table output).
 - Audit findings & how to read the Monte Carlo: `MODEL_VALIDATION.md` (Jun 2026)
 - If facts change: update constants, regenerate YAML trajectory, update pinned goldens in the same commit
 

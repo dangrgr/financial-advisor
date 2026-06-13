@@ -195,6 +195,31 @@ Caveats: Terri's age-70 benefit is an actuarial estimate (her ssa.gov figure
 isn't on file), and the textbook-optimal move is often to delay only the higher
 earner; the model delays both to one age for simplicity.
 
+### 3f. Savings dials (`--savings-table` + per-vessel knobs) — the year-over-year planning view
+
+The contribution side is now fully parameterized so the annual savings
+conversation is concrete and itemized. Each vessel is its own dial — base
+salary (drives the 401k % and match %), 401k employee %, match %, the bonus
+top-off, Dan's backdoor Roth, Terri's taxable redirect, a Terri **solo-401(k)**
+(deductible), and a Terri **traditional IRA** (non-deductible). `--savings-table`
+prints the year-by-year schedule by vessel + bucket subtotals. **All defaults
+reproduce the prior hardcoded schedule exactly** (~$825k over 8 years: $300.5k
+tax-deferred / $61k Roth / $463k taxable), so the pinned baseline never moved.
+
+The non-deductible IRA gets its own basis-tracked bucket: basis returns
+tax-free, only growth is taxed at the ordinary rate. **The honest limitation,
+documented in the table output:** the model taxes money *only at withdrawal* —
+it does not model the contribution-time deduction, the pro-rata rule, step-up at
+death, or the 10% early penalty. So routing Terri's $8k to a solo-401(k) shows a
+slightly *lower* ending (it's taxed at withdrawal, and the deduction going in
+isn't credited), while routing it to a non-deductible IRA shows a slightly
+*higher* one (basis comes back free, with pro-rata/step-up invisible). Use the
+dials for **allocation and longevity** effects; treat deductible-vs-non-
+deductible tax arbitrage as a CPA question. The real lesson stands: Terri's only
+genuinely-deductible pre-tax route is the solo-401(k) off her consulting income;
+a non-deductible IRA is dominated by taxable once step-up and pro-rata are
+considered.
+
 ## 4. The regression suite (`test_retirement_model.py`)
 
 | Layer | What turns red if… |
