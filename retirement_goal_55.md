@@ -4,6 +4,8 @@
 
 **The verdict:** On plan, this is **bulletproof at the low end of your range and returns-dependent at the top.** At **$12k/mo** it survives every scenario (dies with ~$0.9M even in the stress case). At your **$13k/mo midpoint** the base case is strong — start retirement with ~$3.1M, never dip below ~$2.4M, die with ~$4.0M — but a sustained poor-returns world (4% real) would draw it down by your early 90s. So treat **$12k/mo as the safe floor and $13–14k/mo as the reward if markets cooperate**, with the uncounted upside below as backstop.
 
+*(Validated Jun 2026 — every figure here is now pinned by `test_retirement_model.py`; run `python3 -m unittest` before trusting any number. With Roth-conversion taxes modeled (`--conversions`) the honest base-case ending is ~$3.4M rather than ~$4.0M — verdict unchanged. See `MODEL_VALIDATION.md` for the full audit, Monte Carlo sequence-risk results, and survivor/SS-cut stresses.)*
+
 ---
 
 ## Where things stand now (May 2026)
@@ -61,11 +63,11 @@ Note: **Voleon (7960) is your current 401k** — pre-tax, but convertible only a
 
 ## Which accounts to live from (55–65) — avoiding the 10% early penalty
 
-Traditional IRA/401k withdrawals before **age 59½** owe a 10% penalty (Dan hits 59½ in Jan 2039; Terri ~early 2037). The good news: the projection shows your **taxable brokerage alone funds ages 55–59 and runs out right around age 60** — so pre-tax withdrawals naturally begin *after* the penalty window. Sequence it deliberately:
+Traditional IRA/401k withdrawals before **age 59½** owe a 10% penalty (Dan hits 59½ in Jan 2039; Terri ~early 2037). The good news: the projection shows your **taxable brokerage alone (~$836k entering 2034) funds ages 55–58 and exhausts during the year Dan turns 59** — a few months before his Jan-2039 59½ date, but Terri is 61 by then, so the first pre-tax draws come penalty-free from her accounts (with Roth basis and Rule of 55 as further backstops). Sequence it deliberately:
 
 | Ages | Spend from | Backstops | Don't |
 |---|---|---|---|
-| **55–59½** (2034–~2039) | **Taxable brokerage** (~$707k at retirement; lasts to ~60). Doubles as keeping MAGI low for cheap conversions. | Roth contributions/basis (tax- & penalty-free); **Rule of 55** on the Voleon 401k | **No traditional IRA/401k withdrawals for spending** (10% penalty). Conversions are fine. |
+| **55–59½** (2034–~2039) | **Taxable brokerage** (~$836k at retirement; lasts into the Dan-59 year). Doubles as keeping MAGI low for cheap conversions. | Roth contributions/basis (tax- & penalty-free); **Rule of 55** on the Voleon 401k | **No traditional IRA/401k withdrawals for spending** (10% penalty). Conversions are fine. |
 | **59½–65** (2039–2044) | Taxable (drained ~60), then traditional/401k — also keeps filling the 22% bracket pre-RMD | Roth (preserve for last) | — |
 
 **Rule of 55:** because you separate from Voleon in the year you turn 55, that 401k's withdrawals are penalty-free at 55 — but *only* Voleon (eBay/Empower are prior employers), and *only* if you leave the money in that plan (don't roll it to an IRA) and the plan allows partial distributions. This is your penalty-free backstop if taxable runs short. Trade-off: keeping Voleon in-plan for Rule of 55 conflicts with rolling it to an IRA to convert it — since taxable covers the bridge, the default is roll-and-convert, but you can keep it in-plan as insurance.
@@ -103,14 +105,16 @@ If your real balance is **at or above** the target line each Jan 1, you're on tr
 
 ## The real risks (what would move the date)
 1. **Sequence-of-returns** in the first ~5 retirement years — the biggest threat. The $12k floor is the cushion.
-2. **The ~$50k/yr taxable savings** holding up (it rides on the bonus) — this both grows the portfolio *and* sizes your penalty-free 55–59½ bridge. **~$30k is the floor** (date still works, bridge reaches ~59); below that, you'd lean on Rule of 55 / Roth basis earlier.
+2. **The ~$50k/yr taxable savings** holding up (it rides on the bonus) — this both grows the portfolio *and* sizes your penalty-free 55–59½ bridge. **~$30k is the floor** (date still works; bridge is ~$635k and exhausts during the Dan-58 year); below that, you'd lean on Rule of 55 / Roth basis earlier.
 3. **Health costs pre-65** — budgeted $15k/person/yr; revisit closer to the date.
 4. **Social Security policy** — if benefits get trimmed, lean to the $12k end.
 
 ## The annual ritual (each Jan 1)
-1. Open `retirement_plan.yaml`, fill that year's checkpoint with real numbers (AGI, balances by bucket, contributions, latest SS estimate, mortgage balance).
-2. Compare `total_investable` to `target_total_investable`.
-3. Re-run `python3 retirement_projection.py` (and stress it: `--return 0.04 --taxable 30000`).
-4. We confirm on-track or adjust spend / savings / date.
+1. **`python3 -m unittest`** — must be green before trusting any number (verifies the model still matches this document and the YAML, end to end).
+2. Open `retirement_plan.yaml`, fill that year's checkpoint with real numbers (AGI, balances by bucket, contributions, latest SS estimate, mortgage balance).
+3. Compare `total_investable` to `target_total_investable`.
+4. Re-run `python3 retirement_projection.py --conversions` (honest base) and `--monte-carlo 2000` (sequence-risk view); stress it: `--return 0.04 --taxable 30000`.
+5. We confirm on-track or adjust spend / savings / date.
+6. If facts changed (balances, salary, SS), update the constants, regenerate the YAML trajectory, and update the pinned goldens in `test_retirement_model.py` in the same commit — the red suite is the reminder.
 
-*Model: `retirement_projection.py`. Tracking data: `retirement_plan.yaml`. All figures today's dollars.*
+*Model: `retirement_projection.py`. Tracking data: `retirement_plan.yaml`. Validation: `test_retirement_model.py` + `MODEL_VALIDATION.md`. All figures today's dollars.*

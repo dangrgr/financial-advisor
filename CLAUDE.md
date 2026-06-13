@@ -84,6 +84,16 @@ python3 monthly_review.py --month 2026-01 --csv /path/to/export.csv --draw-car-r
 
 Reports are written to `reviews/YYYY-MM-review.md`.
 
+## Retirement Model (retirement_projection.py)
+- Plan documents: `retirement_goal_55.md` (narrative) + `retirement_plan.yaml` (tracking/checkpoints)
+- **Before trusting any retirement number, run `python3 -m unittest`** — the suite in
+  `test_retirement_model.py` pins every figure the plan docs cite, checks the YAML trajectory
+  against the model, and cross-validates the engine against closed-form math. Green = solid ground.
+- Scenario knobs (defaults reproduce the pinned baseline): `--conversions` (honest base case,
+  ~$3.4M not ~$4.0M), `--ss-haircut 0.20`, `--survivor-at AGE`, `--monte-carlo 2000`, `--solve-spend`
+- Audit findings & how to read the Monte Carlo: `MODEL_VALIDATION.md` (Jun 2026)
+- If facts change: update constants, regenerate YAML trajectory, update pinned goldens in the same commit
+
 ## Database: budget_analysis.db
 | Table | Contents |
 |-------|----------|

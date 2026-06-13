@@ -9,12 +9,23 @@ inflation), spending is constant real, Social Security estimates from ssa.gov
 are already quoted in today's dollars. This keeps the output readable without
 an inflation lens.
 
-Deterministic (not Monte Carlo). The conservative-return scenario (4% real) is
-the proxy for sequence-of-returns risk. Re-run with --help to see knobs.
+The DEFAULT run is deterministic and reproduces the numbers pinned in
+retirement_plan.yaml and test_retirement_model.py (run `python3 -m unittest`
+to verify — green tests mean the model still says what the plan documents say).
+
+Optional layers (off by default so the pinned baseline never moves):
+  --monte-carlo N    sequence-of-returns risk as a success probability
+                     (lognormal real returns; median path = deterministic path)
+  --conversions      explicit Roth-conversion tax drag (watchlist item #1)
+  --ss-haircut X     benefit cut stress (plan assumption knob, e.g. 0.20)
+  --survivor-at AGE  first-death scenario: one SS benefit, single brackets
+  --solve-spend      bisect the max sustainable spend for the given knobs
 """
 
 import argparse
-from dataclasses import dataclass
+import math
+import random
+from dataclasses import dataclass, replace
 
 # ---------------------------------------------------------------------------
 # INPUTS — edit these as facts change
@@ -62,6 +73,58 @@ TAX_DEFERRED_RATE  = 0.12     # ordinary income on pre-tax withdrawals
 TAXABLE_GAINS_RATE = 0.075    # ~15% LTCG on ~50% embedded gains
 SS_TAX_RATE        = 0.10     # ~85% of SS taxable, low bracket
 
+# Roth-conversion drag (used only with --conversions). The plan converts
+# ~$190k/yr in 2034-2043 filling the 22% bracket; the watchlist (#1) puts the
+# realistic blended cost at ~18-22% (fed + NIIT in big years + CO ~4.4%).
+CONV_AMOUNT_DEFAULT   = 190_000
+CONV_TAX_RATE_DEFAULT = 0.19
+
+# Survivor scenario (used only with --survivor-at). Crude but parameterized:
+# household keeps the LARGER SS benefit, spending drops (one person), and
+# tax rates rise (single filer brackets — the "widow's penalty").
+SURVIVOR_SPEND_FACTOR   = 0.75
+SURVIVOR_DEFERRED_RATE  = 0.20
+SURVIVOR_SS_TAX_RATE    = 0.12
+
+# Monte Carlo defaults (used only with --monte-carlo). Log-return sigma ~0.16
+# approximates a heavily-equity portfolio. mu = ln(1+real_return), so the
+# MEDIAN Monte Carlo path equals the deterministic path — failure probability
+# then isolates sequence-of-returns / volatility risk around the same trend.
+MC_VOL_DEFAULT  = 0.16
+MC_SEED_DEFAULT = 42
+
+
+# ---------------------------------------------------------------------------
+# PARAMETERS
+# ---------------------------------------------------------------------------
+
+@dataclass(frozen=True)
+class Params:
+    """Everything simulate() needs. Defaults reproduce the pinned baseline."""
+    real_return: float = REAL_RETURN
+    taxable_savings: float = TAXABLE_SAVINGS
+    spend: float = SPEND
+    health_per_person: float = HEALTH_BRIDGE_PER_PERSON
+    ss_claim_age: int = SS_CLAIM_AGE
+    ss_haircut: float = 0.0            # 0.20 = benefits cut 20% (plan stress knob)
+    # starting balances (overridable for tests / what-ifs)
+    start_tax_deferred: float = START_TAX_DEFERRED
+    start_roth: float = START_ROTH
+    start_taxable: float = START_TAXABLE
+    # effective tax rates
+    tax_deferred_rate: float = TAX_DEFERRED_RATE
+    taxable_gains_rate: float = TAXABLE_GAINS_RATE
+    ss_tax_rate: float = SS_TAX_RATE
+    # Roth-conversion drag (off by default)
+    conversions: bool = False
+    conv_amount: float = CONV_AMOUNT_DEFAULT
+    conv_tax_rate: float = CONV_TAX_RATE_DEFAULT
+    # survivor scenario (off by default). At this Dan-age, drop to one person.
+    survivor_at_dan_age: int = 0       # 0 = both live to plan horizon
+    survivor_spend_factor: float = SURVIVOR_SPEND_FACTOR
+    survivor_deferred_rate: float = SURVIVOR_DEFERRED_RATE
+    survivor_ss_tax_rate: float = SURVIVOR_SS_TAX_RATE
+
 
 # ---------------------------------------------------------------------------
 # MODEL
@@ -97,34 +160,74 @@ def _draw(need_net, buckets):
     return remaining
 
 
-def simulate(ret_dan_age, real_return=REAL_RETURN, taxable_savings=TAXABLE_SAVINGS,
-             record=False):
-    """Run one life path. Returns (survived: bool, ending_balance, history)."""
-    td, roth, tax = START_TAX_DEFERRED, START_ROTH, START_TAXABLE
+def simulate(ret_dan_age, real_return=None, taxable_savings=None, record=False,
+             params=None, returns=None):
+    """Run one life path. Returns (survived: bool, ending_balance, history).
+
+    `params` is a Params; `real_return`/`taxable_savings` are kept as
+    positional conveniences and override the corresponding Params fields.
+    `returns` is an optional per-year sequence of real returns indexed by
+    (year - CURRENT_YEAR); when given it overrides the constant return
+    (used by monte_carlo).
+    """
+    p = params or Params()
+    if real_return is not None:
+        p = replace(p, real_return=real_return)
+    if taxable_savings is not None:
+        p = replace(p, taxable_savings=taxable_savings)
+
+    td, roth, tax = p.start_tax_deferred, p.start_roth, p.start_taxable
     dan, terri, year = DAN_AGE, TERRI_AGE, CURRENT_YEAR
     history = []
     survived = True
 
+    dan_ss   = DAN_SS_ANNUAL_AT_67   * (1 - p.ss_haircut)
+    terri_ss = TERRI_SS_ANNUAL_AT_67 * (1 - p.ss_haircut)
+
     while dan <= PLAN_TO_DAN_AGE:
         retired = dan >= ret_dan_age
+        survivor = bool(p.survivor_at_dan_age) and dan >= p.survivor_at_dan_age
+        td_rate = p.survivor_deferred_rate if survivor else p.tax_deferred_rate
+        ss_tax  = p.survivor_ss_tax_rate  if survivor else p.ss_tax_rate
 
         if not retired:
-            c_td, c_roth, c_tax = annual_contributions(dan, terri, taxable_savings)
+            c_td, c_roth, c_tax = annual_contributions(dan, terri, p.taxable_savings)
             td += c_td; roth += c_roth; tax += c_tax
         else:
-            need = SPEND
-            if dan < 65:   need += HEALTH_BRIDGE_PER_PERSON
-            if terri < 65: need += HEALTH_BRIDGE_PER_PERSON
+            need = p.spend * (p.survivor_spend_factor if survivor else 1.0)
+            if survivor:
+                # one person left; one health bridge if they're still pre-65
+                if dan < 65:
+                    need += p.health_per_person
+            else:
+                if dan < 65:   need += p.health_per_person
+                if terri < 65: need += p.health_per_person
 
             ss = 0.0
-            if dan >= SS_CLAIM_AGE:   ss += DAN_SS_ANNUAL_AT_67
-            if terri >= SS_CLAIM_AGE: ss += TERRI_SS_ANNUAL_AT_67
-            ss_net = ss * (1 - SS_TAX_RATE)
+            if survivor:
+                # survivor keeps the larger of the two benefits
+                if dan >= p.ss_claim_age:
+                    ss = max(dan_ss, terri_ss)
+            else:
+                if dan >= p.ss_claim_age:   ss += dan_ss
+                if terri >= p.ss_claim_age: ss += terri_ss
+            ss_net = ss * (1 - ss_tax)
 
             net_need = max(0.0, need - ss_net)
+
+            # Roth-conversion drag: move pre-tax -> Roth during the pre-SS
+            # window and pay the conversion tax out of the portfolio (it joins
+            # the year's draw, so it is itself grossed-up for cap-gains when
+            # funded by selling taxable shares — matching reality).
+            if p.conversions and dan < p.ss_claim_age and td > 0:
+                conv = min(td, p.conv_amount)
+                td -= conv
+                roth += conv
+                net_need += conv * p.conv_tax_rate
+
             buckets = [
-                {"name": "taxable", "bal": tax,  "net_factor": 1 - TAXABLE_GAINS_RATE},
-                {"name": "deferred", "bal": td,  "net_factor": 1 - TAX_DEFERRED_RATE},
+                {"name": "taxable", "bal": tax,  "net_factor": 1 - p.taxable_gains_rate},
+                {"name": "deferred", "bal": td,  "net_factor": 1 - td_rate},
                 {"name": "roth",    "bal": roth, "net_factor": 1.0},
             ]
             shortfall = _draw(net_need, buckets)
@@ -133,9 +236,10 @@ def simulate(ret_dan_age, real_return=REAL_RETURN, taxable_savings=TAXABLE_SAVIN
                 survived = False
 
         # Year-end growth on remaining balances.
-        td   *= (1 + real_return)
-        roth *= (1 + real_return)
-        tax  *= (1 + real_return)
+        r = returns[year - CURRENT_YEAR] if returns is not None else p.real_return
+        td   *= (1 + r)
+        roth *= (1 + r)
+        tax  *= (1 + r)
 
         total = td + roth + tax
         if record:
@@ -148,28 +252,81 @@ def simulate(ret_dan_age, real_return=REAL_RETURN, taxable_savings=TAXABLE_SAVIN
     return True, td + roth + tax, history
 
 
-def earliest_age(real_return=REAL_RETURN, taxable_savings=TAXABLE_SAVINGS):
+def earliest_age(real_return=None, taxable_savings=None, params=None):
     for age in range(DAN_AGE + 1, SS_CLAIM_AGE + 1):
-        ok, _, _ = simulate(age, real_return, taxable_savings)
+        ok, _, _ = simulate(age, real_return, taxable_savings, params=params)
         if ok:
             return age
     return None
 
 
-def spend_feasibility_rows(retire_age=55):
+def max_sustainable_spend(ret_age, params=None, lo=60_000, hi=400_000):
+    """Bisect the largest annual spend that survives to the plan horizon."""
+    p = params or Params()
+    for _ in range(60):
+        mid = (lo + hi) / 2
+        ok, _, _ = simulate(ret_age, params=replace(p, spend=mid))
+        if ok:
+            lo = mid
+        else:
+            hi = mid
+    return lo
+
+
+def spend_feasibility_rows(retire_age=55, params=None):
     """For each monthly spend goal, test age-`retire_age` survival under base &
-    stress, plus the earliest feasible age. Temporarily overrides the SPEND
-    global, then restores it."""
-    global SPEND
-    base = SPEND
+    stress, plus the earliest feasible age."""
+    p = params or Params()
     rows = []
     for annual in (144_000, 156_000, 168_000):
-        SPEND = annual
-        ok_b, end_b, _ = simulate(retire_age, 0.05, 50_000)
-        ok_s, end_s, _ = simulate(retire_age, 0.04, 30_000)
-        rows.append((annual, ok_b, end_b, ok_s, end_s, earliest_age(0.05, 50_000)))
-    SPEND = base
+        base   = replace(p, spend=annual, real_return=0.05, taxable_savings=50_000)
+        stress = replace(p, spend=annual, real_return=0.04, taxable_savings=30_000)
+        ok_b, end_b, _ = simulate(retire_age, params=base)
+        ok_s, end_s, _ = simulate(retire_age, params=stress)
+        rows.append((annual, ok_b, end_b, ok_s, end_s, earliest_age(params=base)))
     return rows
+
+
+def monte_carlo(ret_age, params=None, n_paths=2_000, vol=MC_VOL_DEFAULT,
+                seed=MC_SEED_DEFAULT):
+    """Sequence-of-returns risk via i.i.d. lognormal real returns.
+
+    mu = ln(1 + real_return), so the MEDIAN path compounds at exactly the
+    deterministic rate — failure probability isolates volatility/sequence
+    risk around the same long-run trend (the arithmetic mean return is then
+    slightly higher, ~ real_return + vol^2/2).
+
+    Returns dict: success_rate, ending-balance percentiles (p10/p50/p90 over
+    ALL paths, failures counted as $0), median failure age among failures.
+    """
+    p = params or Params()
+    rng = random.Random(seed)
+    mu = math.log(1 + p.real_return)
+    horizon = PLAN_TO_DAN_AGE - DAN_AGE + 1
+
+    endings, fail_ages = [], []
+    successes = 0
+    for _ in range(n_paths):
+        seq = [math.exp(rng.gauss(mu, vol)) - 1 for _ in range(horizon)]
+        ok, end, hist = simulate(ret_age, params=p, returns=seq, record=True)
+        if ok:
+            successes += 1
+            endings.append(end)
+        else:
+            endings.append(0.0)
+            fail_ages.append(hist[-1][1])   # Dan's age in the depletion year
+    endings.sort()
+
+    def pct(q):
+        return endings[min(len(endings) - 1, int(q * len(endings)))]
+
+    fail_ages.sort()
+    return {
+        "n": n_paths,
+        "success_rate": successes / n_paths,
+        "p10": pct(0.10), "p50": pct(0.50), "p90": pct(0.90),
+        "median_fail_age": fail_ages[len(fail_ages) // 2] if fail_ages else None,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -187,7 +344,38 @@ def main():
                     help="real return assumption (default 0.05)")
     ap.add_argument("--taxable", type=float, default=TAXABLE_SAVINGS,
                     help="annual taxable savings (default 50000)")
+    ap.add_argument("--spend", type=float, default=SPEND,
+                    help="annual retirement spend, today's $ (default 156000 = $13k/mo)")
+    ap.add_argument("--health", type=float, default=HEALTH_BRIDGE_PER_PERSON,
+                    help="pre-65 health cost per person/yr (default 15000)")
+    ap.add_argument("--ss-haircut", type=float, default=0.0,
+                    help="Social Security benefit cut, e.g. 0.20 (default 0)")
+    ap.add_argument("--retire-age", type=int, default=55,
+                    help="Dan retirement age for --solve-spend / --monte-carlo (default 55)")
+    ap.add_argument("--conversions", action="store_true",
+                    help="model Roth-conversion tax drag during the pre-SS window")
+    ap.add_argument("--conv-amount", type=float, default=CONV_AMOUNT_DEFAULT,
+                    help="annual Roth conversion, today's $ (default 190000)")
+    ap.add_argument("--conv-tax", type=float, default=CONV_TAX_RATE_DEFAULT,
+                    help="blended tax rate on conversions (default 0.19)")
+    ap.add_argument("--survivor-at", type=int, default=0,
+                    help="Dan age at first death; survivor keeps larger SS, "
+                         "single brackets, spend x%.2f (default off)" % SURVIVOR_SPEND_FACTOR)
+    ap.add_argument("--solve-spend", action="store_true",
+                    help="bisect max sustainable annual spend at --retire-age")
+    ap.add_argument("--monte-carlo", type=int, default=0, metavar="N",
+                    help="run N random-return paths at --retire-age")
+    ap.add_argument("--vol", type=float, default=MC_VOL_DEFAULT,
+                    help="Monte Carlo log-return volatility (default 0.16)")
+    ap.add_argument("--seed", type=int, default=MC_SEED_DEFAULT,
+                    help="Monte Carlo random seed (default 42)")
     args = ap.parse_args()
+
+    p = Params(real_return=args.ret, taxable_savings=args.taxable,
+               spend=args.spend, health_per_person=args.health,
+               ss_haircut=args.ss_haircut,
+               conversions=args.conversions, conv_amount=args.conv_amount,
+               conv_tax_rate=args.conv_tax, survivor_at_dan_age=args.survivor_at)
 
     start_total = START_TAX_DEFERRED + START_ROTH + START_TAXABLE
     print("=" * 70)
@@ -196,16 +384,22 @@ def main():
     print(f"Starting investable: {fmt(start_total)}")
     print(f"  Tax-deferred {fmt(START_TAX_DEFERRED)} | "
           f"Roth {fmt(START_ROTH)} | Taxable {fmt(START_TAXABLE)}")
-    print(f"Spending goal: {fmt(SPEND)}/yr all-in  "
-          f"(+{fmt(HEALTH_BRIDGE_PER_PERSON)}/person health pre-65)")
+    print(f"Spending goal: {fmt(p.spend)}/yr all-in  "
+          f"(+{fmt(p.health_per_person)}/person health pre-65)")
     print(f"Social Security at 67: Dan {fmt(DAN_SS_ANNUAL_AT_67)} + "
           f"Terri {fmt(TERRI_SS_ANNUAL_AT_67)} = "
           f"{fmt(DAN_SS_ANNUAL_AT_67 + TERRI_SS_ANNUAL_AT_67)}/yr")
     print(f"Assumptions: {args.ret:.0%} real return, "
           f"{fmt(args.taxable)}/yr taxable savings")
+    extras = []
+    if p.ss_haircut:            extras.append(f"SS haircut {p.ss_haircut:.0%}")
+    if p.conversions:           extras.append(f"Roth conversions {fmt(p.conv_amount)}/yr @ {p.conv_tax_rate:.0%}")
+    if p.survivor_at_dan_age:   extras.append(f"survivor scenario from Dan age {p.survivor_at_dan_age}")
+    if extras:
+        print("Scenario overlays: " + "; ".join(extras))
     print()
 
-    age = earliest_age(args.ret, args.taxable)
+    age = earliest_age(params=p)
     if age:
         years_away = age - DAN_AGE
         print(f">>> EARLIEST FEASIBLE RETIREMENT: Dan age {age} "
@@ -219,7 +413,7 @@ def main():
     print("Retire at | Portfolio at Dan-95 (real) | Result")
     print("-" * 55)
     for a in range(52, 63):
-        ok, ending, _ = simulate(a, args.ret, args.taxable)
+        ok, ending, _ = simulate(a, params=p)
         flag = "OK, dies with " + fmt(ending) if ok else "DEPLETES"
         print(f"  Dan {a}   | {flag}")
     print()
@@ -232,25 +426,47 @@ def main():
     for r in (0.04, 0.05, 0.06):
         row = [f"{r:.0%}".rjust(7) + "  |"]
         for t in (30_000, 50_000, 80_000):
-            a = earliest_age(r, t)
+            a = earliest_age(params=replace(p, real_return=r, taxable_savings=t))
             row.append(f"  {a if a else '>67'}".rjust(7))
         print("  " + "".join(row))
     print()
     print("Spend-goal feasibility retiring at 55 (today's $):")
     print("  per mo |  base (5% real,$50k)  | stress (4% real,$30k) | earliest age")
     print("  " + "-" * 64)
-    for annual, ok_b, end_b, ok_s, end_s, ea in spend_feasibility_rows(55):
+    for annual, ok_b, end_b, ok_s, end_s, ea in spend_feasibility_rows(55, params=p):
         b = ("OK " + fmt(end_b)) if ok_b else "FAIL"
         s = ("OK " + fmt(end_s)) if ok_s else "FAIL"
         print(f"  ${annual/12:>5,.0f} |  {b:<20} | {s:<20} | {ea}")
     print()
+
+    if args.solve_spend:
+        ms = max_sustainable_spend(args.retire_age, params=p)
+        print(f"Max sustainable spend retiring at Dan {args.retire_age} "
+              f"(these knobs): {fmt(ms)}/yr = {fmt(ms/12)}/mo")
+        print()
+
+    if args.monte_carlo:
+        mc = monte_carlo(args.retire_age, params=p, n_paths=args.monte_carlo,
+                         vol=args.vol, seed=args.seed)
+        print(f"Monte Carlo — retire at Dan {args.retire_age}, "
+              f"{mc['n']} paths, vol {args.vol:.0%}, seed {args.seed}")
+        print(f"  (median path = the deterministic {args.ret:.0%}-real path; "
+              f"failures count as $0 in percentiles)")
+        print(f"  Success rate: {mc['success_rate']:.1%}")
+        print(f"  Ending balance at Dan-95: p10 {fmt(mc['p10'])} | "
+              f"p50 {fmt(mc['p50'])} | p90 {fmt(mc['p90'])}")
+        if mc["median_fail_age"]:
+            print(f"  Median depletion age among failures: Dan {mc['median_fail_age']}")
+        print()
+
     print("Not modeled (all upside): $115k 529s, ~$134k cash (incl $50k gift),")
     print("mortgage payoff (~2049 or at inheritance), parental inheritance,")
     print("Social Security claimed later than 67, post-retirement part-time work.")
     print()
     print("Known simplifications (revisit at check-ins): RMDs not modeled;")
-    print("Roth-conversion taxes handled in the plan, not here; flat retirement")
-    print("tax rates; annual begin-of-year timing; SS taxed at a flat rate.")
+    print("Roth-conversion taxes OFF by default (quantify with --conversions);")
+    print("flat retirement tax rates; annual begin-of-year timing; SS taxed at")
+    print("a flat rate. Validate anytime: python3 -m unittest -v")
 
 
 if __name__ == "__main__":
