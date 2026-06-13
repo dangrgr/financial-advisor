@@ -18,6 +18,8 @@ Optional layers (off by default so the pinned baseline never moves):
                      (lognormal real returns; median path = deterministic path)
   --conversions      explicit Roth-conversion tax drag (watchlist item #1)
   --ss-haircut X     benefit cut stress (plan assumption knob, e.g. 0.20)
+  --ss-claim-age AGE claim Social Security at AGE (62-70); benefit adjusts for
+                     delayed credits / early reduction (default 67 = FRA)
   --survivor-at AGE  first-death scenario: one SS benefit, single brackets
   --side-income $    factor (never depend on) gap-year side-hustle income;
                      offsets bridge draws in the window (default ages 55-60)
@@ -68,7 +70,8 @@ HEALTH_BRIDGE_PER_PERSON = 15_000   # private health insurance until age 65
 # Dan from ssa.gov: $2,851 @62, $4,223 @67 (FRA), $5,266 @70.
 DAN_SS_ANNUAL_AT_67   = 50_676      # $4,223/mo (ssa.gov)
 TERRI_SS_ANNUAL_AT_67 = 33_784      # ~2/3 of Dan, $2,815/mo
-SS_CLAIM_AGE = 67
+SS_FRA = 67                         # Full Retirement Age (the canonical figures above)
+SS_CLAIM_AGE = 67                   # default claim age = FRA (benefit factor = 1.0)
 
 # Retirement tax approximation (effective rates on withdrawals/SS).
 TAX_DEFERRED_RATE  = 0.12     # ordinary income on pre-tax withdrawals
@@ -151,6 +154,30 @@ class Params:
 # MODEL
 # ---------------------------------------------------------------------------
 
+def ss_benefit_factor(claim_age, fra=SS_FRA):
+    """Multiplier on the FRA (age-67) benefit for claiming at `claim_age`.
+
+    Uses the standard SSA actuarial adjustments, applied to the canonical
+    age-67 figures so we never need a separately-sourced number per claim age:
+
+      * Delayed Retirement Credits: +8%/yr for each year past FRA, capped at
+        age 70 (no further credit after 70). Claim at 70 = 1.24x.
+      * Early-claiming reduction: 5/9 of 1%/mo for the first 36 months early,
+        then 5/12 of 1%/mo beyond that. Claim at 62 = 0.70x.
+
+    Claim age is clamped to SSA's 62-70 window. (The model uses the textbook
+    8%/yr DRC, marginally conservative vs Dan's actual ssa.gov $5,266 @70.)
+    """
+    claim_age = max(62, min(70, claim_age))
+    if claim_age >= fra:
+        return 1.0 + 0.08 * (claim_age - fra)
+    months_early = (fra - claim_age) * 12
+    first = min(months_early, 36)
+    beyond = max(0, months_early - 36)
+    reduction = first * (5/9) / 100 + beyond * (5/12) / 100
+    return 1.0 - reduction
+
+
 def annual_contributions(dan_age, terri_age, taxable_savings):
     """Return (tax_deferred, roth, taxable) contributions for one working year."""
     dan_401k_employee = 24_000 if dan_age < 50 else 31_500   # +catch-up at 50
@@ -202,8 +229,12 @@ def simulate(ret_dan_age, real_return=None, taxable_savings=None, record=False,
     history = []
     survived = True
 
-    dan_ss   = DAN_SS_ANNUAL_AT_67   * (1 - p.ss_haircut)
-    terri_ss = TERRI_SS_ANNUAL_AT_67 * (1 - p.ss_haircut)
+    # Benefit scales with claim age (delayed credits / early reduction), then
+    # the optional policy haircut. Both spouses claim at the same AGE, so each
+    # benefit simply starts in the year that person reaches p.ss_claim_age.
+    ss_factor = ss_benefit_factor(p.ss_claim_age)
+    dan_ss   = DAN_SS_ANNUAL_AT_67   * ss_factor * (1 - p.ss_haircut)
+    terri_ss = TERRI_SS_ANNUAL_AT_67 * ss_factor * (1 - p.ss_haircut)
 
     while dan <= PLAN_TO_DAN_AGE:
         retired = dan >= ret_dan_age
@@ -382,6 +413,9 @@ def main():
                     help="pre-65 health cost per person/yr (default 15000)")
     ap.add_argument("--ss-haircut", type=float, default=0.0,
                     help="Social Security benefit cut, e.g. 0.20 (default 0)")
+    ap.add_argument("--ss-claim-age", type=int, default=SS_CLAIM_AGE,
+                    help="age both claim SS, 62-70; benefit adjusts for delayed "
+                         "credits/early reduction (default 67 = FRA)")
     ap.add_argument("--retire-age", type=int, default=55,
                     help="Dan retirement age for --solve-spend / --monte-carlo (default 55)")
     ap.add_argument("--conversions", action="store_true",
@@ -414,7 +448,7 @@ def main():
 
     p = Params(real_return=args.ret, taxable_savings=args.taxable,
                spend=args.spend, health_per_person=args.health,
-               ss_haircut=args.ss_haircut,
+               ss_haircut=args.ss_haircut, ss_claim_age=args.ss_claim_age,
                conversions=args.conversions, conv_amount=args.conv_amount,
                conv_tax_rate=args.conv_tax, survivor_at_dan_age=args.survivor_at,
                side_income=args.side_income,
@@ -431,12 +465,15 @@ def main():
           f"Roth {fmt(START_ROTH)} | Taxable {fmt(START_TAXABLE)}")
     print(f"Spending goal: {fmt(p.spend)}/yr all-in  "
           f"(+{fmt(p.health_per_person)}/person health pre-65)")
-    print(f"Social Security at 67: Dan {fmt(DAN_SS_ANNUAL_AT_67)} + "
-          f"Terri {fmt(TERRI_SS_ANNUAL_AT_67)} = "
-          f"{fmt(DAN_SS_ANNUAL_AT_67 + TERRI_SS_ANNUAL_AT_67)}/yr")
+    ssf = ss_benefit_factor(p.ss_claim_age)
+    print(f"Social Security at {p.ss_claim_age}: Dan {fmt(DAN_SS_ANNUAL_AT_67 * ssf)} + "
+          f"Terri {fmt(TERRI_SS_ANNUAL_AT_67 * ssf)} = "
+          f"{fmt((DAN_SS_ANNUAL_AT_67 + TERRI_SS_ANNUAL_AT_67) * ssf)}/yr"
+          + (f"  ({ssf:.2f}x FRA)" if p.ss_claim_age != SS_FRA else ""))
     print(f"Assumptions: {args.ret:.0%} real return, "
           f"{fmt(args.taxable)}/yr taxable savings")
     extras = []
+    if p.ss_claim_age != SS_FRA: extras.append(f"SS claimed at {p.ss_claim_age} ({ss_benefit_factor(p.ss_claim_age):.2f}x)")
     if p.ss_haircut:            extras.append(f"SS haircut {p.ss_haircut:.0%}")
     if p.conversions:           extras.append(f"Roth conversions {fmt(p.conv_amount)}/yr @ {p.conv_tax_rate:.0%}")
     if p.survivor_at_dan_age:   extras.append(f"survivor scenario from Dan age {p.survivor_at_dan_age}")

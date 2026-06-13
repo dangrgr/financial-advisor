@@ -22,6 +22,8 @@ Layers:
                         value, scenario overlays move results the right way).
   4b. SIDE INCOME     — overlay is pure upside; default-off leaves the pinned
                         baseline untouched; never load-bearing.
+  4c. SS CLAIM AGE    — benefit scales with claim age per SSA rules; default
+                        (67 = FRA) leaves the baseline untouched.
   5. MONTE CARLO      — seeded reproducibility + pinned baseline result.
 """
 
@@ -32,7 +34,8 @@ from dataclasses import replace
 
 import retirement_projection as rp
 from retirement_projection import Params, simulate, earliest_age, \
-    max_sustainable_spend, spend_feasibility_rows, monte_carlo, _draw
+    max_sustainable_spend, spend_feasibility_rows, monte_carlo, _draw, \
+    ss_benefit_factor
 
 HERE = Path(__file__).parent
 YAML = (HERE / "retirement_plan.yaml").read_text()
@@ -366,6 +369,52 @@ class TestSideIncome(unittest.TestCase):
         self.assertFalse(ok0)               # plan does NOT depend on side income
         self.assertTrue(ok1)                # ...but it helps a lot if it happens
         self.assertGreater(end1, 0)
+
+
+# ---------------------------------------------------------------------------
+# 4c. SS CLAIM AGE — benefit must scale with claim age (SSA actuarial rules);
+#     default (67 = FRA) leaves the pinned baseline untouched.
+# ---------------------------------------------------------------------------
+
+class TestSSClaimAge(unittest.TestCase):
+
+    def test_benefit_factor_matches_ssa_rules(self):
+        self.assertAlmostEqual(ss_benefit_factor(67), 1.00, places=4)   # FRA
+        self.assertAlmostEqual(ss_benefit_factor(70), 1.24, places=4)   # +8%/yr x3
+        self.assertAlmostEqual(ss_benefit_factor(68), 1.08, places=4)
+        self.assertAlmostEqual(ss_benefit_factor(62), 0.70, places=4)   # 30% cut
+        # Independent re-derivation at 64 (36 mo early): 36 * 5/9 % = 20% cut.
+        self.assertAlmostEqual(ss_benefit_factor(64), 0.80, places=4)
+        # 63 = 48 mo early: 36*(5/9)% + 12*(5/12)% = 20% + 5% = 25% cut.
+        self.assertAlmostEqual(ss_benefit_factor(63), 0.75, places=4)
+
+    def test_factor_clamps_to_62_70_window(self):
+        self.assertEqual(ss_benefit_factor(75), ss_benefit_factor(70))  # no DRC past 70
+        self.assertEqual(ss_benefit_factor(58), ss_benefit_factor(62))
+
+    def test_default_claim_age_leaves_baseline_unchanged(self):
+        ok, end, _ = simulate(55, params=Params(ss_claim_age=67))
+        self.assertTrue(ok)
+        self.assertAlmostEqual(end, 4_023_750, delta=TOL)
+
+    def test_delaying_helps_the_base_case_pinned(self):
+        # Naive base: claim 70 should beat claim 67 (bigger lifetime checks win
+        # at a plan-to-95 horizon), and claim 62 should trail it.
+        _, e62, _ = simulate(55, params=Params(ss_claim_age=62))
+        _, e67, _ = simulate(55, params=Params(ss_claim_age=67))
+        _, e70, _ = simulate(55, params=Params(ss_claim_age=70))
+        self.assertLess(e62, e67)
+        self.assertGreater(e70, e67)
+        self.assertAlmostEqual(e70, 4_127_361, delta=TOL)   # §pinned
+
+    def test_delaying_does_not_rescue_the_failing_stress_case(self):
+        # The key finding: delayed SS is a LONGEVITY hedge, not a FRAGILITY
+        # hedge. It must NOT flip the failing stress path to survival (the
+        # 67-70 no-SS gap forces extra early draws that offset the bigger
+        # later checks). Contrast: side income and the $12k floor DO rescue it.
+        base = Params(conversions=True, real_return=0.04, taxable_savings=30_000)
+        self.assertFalse(simulate(55, params=base)[0])              # fails @67
+        self.assertFalse(simulate(55, params=replace(base, ss_claim_age=70))[0])
 
     def test_zero_spend_always_survives(self):
         ok, end, _ = simulate(55, params=Params(spend=0, health_per_person=0))

@@ -60,6 +60,7 @@ math — it was the absence of guardrails and the unquantified simplifications b
 python3 retirement_projection.py                         # unchanged baseline
 python3 retirement_projection.py --conversions           # Roth conversion drag
 python3 retirement_projection.py --ss-haircut 0.20       # SS benefit cut stress
+python3 retirement_projection.py --ss-claim-age 70       # delay SS (benefit auto-adjusts)
 python3 retirement_projection.py --survivor-at 75        # first-death scenario
 python3 retirement_projection.py --side-income 50000     # gap-year side hustle (upside only)
 python3 retirement_projection.py --solve-spend           # max sustainable spend
@@ -168,6 +169,31 @@ flattering the plan); (2) it does **not** auto-throttle Roth conversions to
 stay in-bracket — that annual tax-optimization is the §8/CPA question, not
 something a flat-rate model should fake. Tune the tax rate and window with the
 CPA when real numbers exist.
+
+### 3e. SS claim age (`--ss-claim-age`) — longevity hedge, not fragility hedge
+
+The model now scales the Social Security benefit by claim age using the
+standard SSA actuarial rules, applied to the canonical age-67 (FRA) figures
+(so no separately-sourced number is needed per age): **+8%/yr delayed credit
+past FRA, capped at 70 (1.24×); 5/9%/mo then 5/12%/mo early reduction (0.70× at
+62).** Default is 67 (factor 1.0 → baseline untouched). Both spouses claim at
+the same age; the conversion window auto-extends to the claim age.
+
+| Path (retire 55, honest base) | Claim 62 | Claim 67 | Claim 70 |
+|---|--:|--:|--:|
+| Ends at 95 with | $3.18M | $3.43M | **$3.53M** |
+
+**The non-obvious finding:** delaying to 70 helps the base case (+~$104k) but
+does **not** rescue the failing stress path (it still depletes at 88). Reason:
+delaying means three extra years (67–70) of drawing the portfolio with *no* SS,
+which lands exactly when a stress-case portfolio is most fragile and roughly
+cancels the larger later checks. So the backstops sort into two kinds:
+**fragility hedges** that fix a bad-returns decade (the ~$35k/yr side hustle,
+the $12k floor — both rescue the stress case) and **longevity hedges** that pay
+off only with a long life and protect the survivor (delayed SS — does not).
+Caveats: Terri's age-70 benefit is an actuarial estimate (her ssa.gov figure
+isn't on file), and the textbook-optimal move is often to delay only the higher
+earner; the model delays both to one age for simplicity.
 
 ## 4. The regression suite (`test_retirement_model.py`)
 
