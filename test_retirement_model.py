@@ -20,6 +20,12 @@ Layers:
   4. PROPERTIES       — directional sanity (more return -> retire earlier,
                         more spend -> less ending wealth, draws conserve
                         value, scenario overlays move results the right way).
+  4b. SIDE INCOME     — overlay is pure upside; default-off leaves the pinned
+                        baseline untouched; never load-bearing.
+  4c. SS CLAIM AGE    — benefit scales with claim age per SSA rules; default
+                        (67 = FRA) leaves the baseline untouched.
+  4d. SAVINGS DIALS   — per-vessel contribution knobs; defaults reproduce the
+                        prior schedule exactly; vessels route to the right bucket.
   5. MONTE CARLO      — seeded reproducibility + pinned baseline result.
 """
 
@@ -30,7 +36,8 @@ from dataclasses import replace
 
 import retirement_projection as rp
 from retirement_projection import Params, simulate, earliest_age, \
-    max_sustainable_spend, spend_feasibility_rows, monte_carlo, _draw
+    max_sustainable_spend, spend_feasibility_rows, monte_carlo, _draw, \
+    ss_benefit_factor, annual_contributions, bucketize, savings_schedule
 
 HERE = Path(__file__).parent
 YAML = (HERE / "retirement_plan.yaml").read_text()
@@ -292,6 +299,197 @@ class TestProperties(unittest.TestCase):
         ok_hi, _, _ = simulate(55, params=Params(spend=ms + 500))
         self.assertTrue(ok_lo)
         self.assertFalse(ok_hi)
+
+
+# ---------------------------------------------------------------------------
+# 4b. SIDE INCOME — overlay must be pure upside, never load-bearing, and the
+#     default (off) must leave every pinned baseline number untouched.
+# ---------------------------------------------------------------------------
+
+class TestSideIncome(unittest.TestCase):
+
+    def test_default_is_off_and_baseline_unchanged(self):
+        # The whole point: factor it if it happens, never depend on it. With
+        # side_income=0 the result must equal the pinned base case exactly.
+        ok, end, _ = simulate(55, params=Params(side_income=0.0))
+        self.assertTrue(ok)
+        self.assertAlmostEqual(end, 4_023_750, delta=TOL)
+
+    def test_side_income_is_pure_upside(self):
+        _, end0, _ = simulate(55, params=Params())
+        _, end1, _ = simulate(55, params=Params(side_income=50_000))
+        self.assertGreater(end1, end0)
+        # §8 Q1 answer, pinned: $50k/yr gross 2034-39 in the base case
+        self.assertAlmostEqual(end1, 5_687_534, delta=TOL)
+
+    def test_more_side_income_never_hurts(self):
+        ends = [simulate(55, params=Params(side_income=s))[1]
+                for s in (0, 25_000, 50_000, 100_000)]
+        self.assertEqual(ends, sorted(ends))
+
+    def test_side_income_extends_the_bridge(self):
+        # Taxable bucket should survive at least as long with side income.
+        def exhaust_age(side):
+            _, _, h = simulate(55, params=Params(side_income=side), record=True)
+            drained = [d for (_, d, _, _, _, _, t) in h if d >= 55 and t < 1]
+            return min(drained)
+        self.assertGreaterEqual(exhaust_age(50_000), exhaust_age(0))
+
+    def test_only_applies_inside_the_window(self):
+        # Income entirely outside the window must change nothing.
+        _, base, _ = simulate(55, params=Params())
+        _, outside, _ = simulate(55, params=Params(
+            side_income=50_000, side_income_start_age=40, side_income_end_age=45))
+        self.assertAlmostEqual(outside, base, delta=TOL)
+
+    def test_net_of_tax_offsets_the_draw_one_for_one(self):
+        # Cross-validation: $X gross at rate r reduces the year's net draw by
+        # exactly X*(1-r) — i.e. side income and an equal net SS inflow are
+        # interchangeable. Build an isolated 1-year-window case and check the
+        # taxable balance moves by net/(1-gains_rate) relative to no income.
+        common = dict(start_tax_deferred=0, start_roth=0, start_taxable=5_000_000,
+                      spend=100_000, health_per_person=0, ss_haircut=1.0,
+                      side_income_start_age=55, side_income_end_age=55)
+        _, _, h0 = simulate(55, params=Params(side_income=0.0, **common), record=True)
+        _, _, h1 = simulate(55, params=Params(side_income=40_000,
+                             side_income_tax_rate=0.25, **common), record=True)
+        tax0 = {d: t for (_, d, _, _, _, _, t) in h0}[55]
+        tax1 = {d: t for (_, d, _, _, _, _, t) in h1}[55]
+        net = 40_000 * 0.75
+        # both grew one year at 5%; the only difference is a smaller draw of
+        # `net` after-tax dollars, i.e. net/(1-gains) fewer shares sold, grown.
+        expected_gap = (net / (1 - 0.075)) * 1.05
+        self.assertAlmostEqual(tax1 - tax0, expected_gap, delta=1.0)
+
+    def test_can_rescue_a_failing_stress_case_but_only_as_upside(self):
+        # The stress+conversions case fails on its own; side income can carry
+        # it — demonstrating value WITHOUT the baseline ever relying on it.
+        stress = Params(conversions=True, real_return=0.04,
+                        taxable_savings=30_000, spend=156_000)
+        ok0, _, _ = simulate(55, params=stress)
+        ok1, end1, _ = simulate(55, params=replace(stress, side_income=50_000))
+        self.assertFalse(ok0)               # plan does NOT depend on side income
+        self.assertTrue(ok1)                # ...but it helps a lot if it happens
+        self.assertGreater(end1, 0)
+
+
+# ---------------------------------------------------------------------------
+# 4c. SS CLAIM AGE — benefit must scale with claim age (SSA actuarial rules);
+#     default (67 = FRA) leaves the pinned baseline untouched.
+# ---------------------------------------------------------------------------
+
+class TestSSClaimAge(unittest.TestCase):
+
+    def test_benefit_factor_matches_ssa_rules(self):
+        self.assertAlmostEqual(ss_benefit_factor(67), 1.00, places=4)   # FRA
+        self.assertAlmostEqual(ss_benefit_factor(70), 1.24, places=4)   # +8%/yr x3
+        self.assertAlmostEqual(ss_benefit_factor(68), 1.08, places=4)
+        self.assertAlmostEqual(ss_benefit_factor(62), 0.70, places=4)   # 30% cut
+        # Independent re-derivation at 64 (36 mo early): 36 * 5/9 % = 20% cut.
+        self.assertAlmostEqual(ss_benefit_factor(64), 0.80, places=4)
+        # 63 = 48 mo early: 36*(5/9)% + 12*(5/12)% = 20% + 5% = 25% cut.
+        self.assertAlmostEqual(ss_benefit_factor(63), 0.75, places=4)
+
+    def test_factor_clamps_to_62_70_window(self):
+        self.assertEqual(ss_benefit_factor(75), ss_benefit_factor(70))  # no DRC past 70
+        self.assertEqual(ss_benefit_factor(58), ss_benefit_factor(62))
+
+    def test_default_claim_age_leaves_baseline_unchanged(self):
+        ok, end, _ = simulate(55, params=Params(ss_claim_age=67))
+        self.assertTrue(ok)
+        self.assertAlmostEqual(end, 4_023_750, delta=TOL)
+
+    def test_delaying_helps_the_base_case_pinned(self):
+        # Naive base: claim 70 should beat claim 67 (bigger lifetime checks win
+        # at a plan-to-95 horizon), and claim 62 should trail it.
+        _, e62, _ = simulate(55, params=Params(ss_claim_age=62))
+        _, e67, _ = simulate(55, params=Params(ss_claim_age=67))
+        _, e70, _ = simulate(55, params=Params(ss_claim_age=70))
+        self.assertLess(e62, e67)
+        self.assertGreater(e70, e67)
+        self.assertAlmostEqual(e70, 4_127_361, delta=TOL)   # §pinned
+
+    def test_delaying_does_not_rescue_the_failing_stress_case(self):
+        # The key finding: delayed SS is a LONGEVITY hedge, not a FRAGILITY
+        # hedge. It must NOT flip the failing stress path to survival (the
+        # 67-70 no-SS gap forces extra early draws that offset the bigger
+        # later checks). Contrast: side income and the $12k floor DO rescue it.
+        base = Params(conversions=True, real_return=0.04, taxable_savings=30_000)
+        self.assertFalse(simulate(55, params=base)[0])              # fails @67
+        self.assertFalse(simulate(55, params=replace(base, ss_claim_age=70))[0])
+
+
+# ---------------------------------------------------------------------------
+# 4d. SAVINGS DIALS — per-vessel contribution knobs. Defaults must reproduce
+#     the prior hardcoded schedule exactly; each dial routes to the right bucket.
+# ---------------------------------------------------------------------------
+
+class TestSavingsDials(unittest.TestCase):
+
+    def test_default_year1_buckets_match_prior_schedule(self):
+        td, roth, tax, nd = bucketize(annual_contributions(Params(), 47, 49))
+        self.assertEqual((td, roth, tax, nd), (32_880, 7_000, 57_000, 0))
+
+    def test_default_schedule_totals(self):
+        _, totals = savings_schedule(Params(), 55)
+        self.assertEqual(totals["_total"], 824_540)
+        self.assertEqual(totals["_tax_deferred"], 300_540)
+        self.assertEqual(totals["_roth"], 61_000)
+        self.assertEqual(totals["_taxable"], 463_000)
+        self.assertEqual(totals["_nondeduct_ira"], 0)
+
+    def test_default_dials_leave_baseline_unchanged(self):
+        ok, end, _ = simulate(55, params=Params())   # all dials at default
+        self.assertTrue(ok)
+        self.assertAlmostEqual(end, 4_023_750, delta=TOL)
+
+    def test_base_salary_drives_match_and_from_base_401k(self):
+        items = annual_contributions(Params(base_salary=260_000), 47, 49)
+        self.assertAlmostEqual(items["employer_match"], 260_000 * 0.04, delta=TOL)
+        self.assertAlmostEqual(items["dan_401k_from_base"], 260_000 * 0.04, delta=TOL)
+        # employee total still capped at the IRS limit
+        self.assertAlmostEqual(items["dan_401k_from_base"] + items["dan_401k_topoff"],
+                               24_000, delta=TOL)
+
+    def test_topoff_cannot_exceed_irs_limit(self):
+        items = annual_contributions(Params(k401_topoff=999_999), 47, 49)
+        self.assertAlmostEqual(items["dan_401k_from_base"] + items["dan_401k_topoff"],
+                               24_000, delta=TOL)            # under 50
+        items50 = annual_contributions(Params(k401_topoff=999_999), 50, 52)
+        self.assertAlmostEqual(items50["dan_401k_from_base"] + items50["dan_401k_topoff"],
+                               31_500, delta=TOL)            # catch-up limit
+
+    def test_terri_solo_401k_routes_to_tax_deferred(self):
+        td0, _, tax0, _ = bucketize(annual_contributions(Params(), 47, 49))
+        td1, _, tax1, nd1 = bucketize(annual_contributions(
+            Params(terri_taxable=0.0, terri_solo_401k=8_000), 47, 49))
+        self.assertAlmostEqual(td1 - td0, 8_000, delta=TOL)   # added to tax-deferred
+        self.assertAlmostEqual(tax0 - tax1, 7_000, delta=TOL) # removed from taxable
+        self.assertEqual(nd1, 0)
+
+    def test_terri_trad_ira_routes_to_nondeduct_bucket(self):
+        _, _, _, nd = bucketize(annual_contributions(
+            Params(terri_taxable=0.0, terri_trad_ira=8_000), 47, 49))
+        self.assertAlmostEqual(nd, 8_000, delta=TOL)
+
+    def test_nondeduct_ira_basis_returns_tax_free_pinned(self):
+        # Routing Terri's $8k/yr into the non-deductible IRA vs leaving it in
+        # taxable changes the outcome (basis returns tax-free, growth taxed at
+        # ordinary). Pinned so the basis-tracking math can't silently drift.
+        _, base, _ = simulate(55, params=Params())
+        _, nd, _ = simulate(55, params=Params(terri_taxable=0.0, terri_trad_ira=8_000))
+        _, solo, _ = simulate(55, params=Params(terri_taxable=0.0, terri_solo_401k=8_000))
+        self.assertAlmostEqual(nd, 4_053_876, delta=TOL)
+        self.assertAlmostEqual(solo, 4_007_171, delta=TOL)
+        # nd-IRA (basis free) beats solo-401k (fully taxed at withdrawal) in the
+        # model's withdrawal-only view — the documented blind spot (no deduction
+        # credited going in, no pro-rata/step-up). Asserted so the caveat stays true.
+        self.assertGreater(nd, solo)
+
+    def test_more_taxable_savings_helps(self):
+        _, lo, _ = simulate(55, params=Params(taxable_savings=30_000))
+        _, hi, _ = simulate(55, params=Params(taxable_savings=70_000))
+        self.assertLess(lo, hi)
 
     def test_zero_spend_always_survives(self):
         ok, end, _ = simulate(55, params=Params(spend=0, health_per_person=0))

@@ -60,7 +60,9 @@ math — it was the absence of guardrails and the unquantified simplifications b
 python3 retirement_projection.py                         # unchanged baseline
 python3 retirement_projection.py --conversions           # Roth conversion drag
 python3 retirement_projection.py --ss-haircut 0.20       # SS benefit cut stress
+python3 retirement_projection.py --ss-claim-age 70       # delay SS (benefit auto-adjusts)
 python3 retirement_projection.py --survivor-at 75        # first-death scenario
+python3 retirement_projection.py --side-income 50000     # gap-year side hustle (upside only)
 python3 retirement_projection.py --solve-spend           # max sustainable spend
 python3 retirement_projection.py --monte-carlo 2000      # sequence-risk probability
 ```
@@ -142,6 +144,81 @@ What it IS telling you, and the two real decisions it sharpens:
 The survivor result partially answers watchlist #4: the plan is robust to a
 first death under these crude assumptions. (Terri's actual SSA estimate is
 still worth pulling — it feeds the non-survivor base case too.)
+
+### 3d. Gap-year side income (`--side-income`) — upside, never load-bearing
+
+Added to *factor* a possible age-55–65 side hustle (see
+`preretirement_income_strategy.md`), explicitly **not** to depend on one — so
+it is off by default and the pinned baseline is untouched. Gross earned income
+in a window (default Dan 55–60 = 2034–2039, the bridge years) is netted for
+tax (default 25% effective: SE tax + modest federal + CO) and used to offset
+that year's portfolio draw — first the conversion-tax drag, then living costs.
+This directly answers strategy-doc §8 Q1.
+
+| Scenario (retire 55, $13k/mo) | Result |
+|---|---|
+| Base case, **$50k/yr** side income 2034–39 | bridge exhausts a year later (Dan 60 vs 59); ends **$5.69M vs $4.02M** (+$1.66M) |
+| Stress (4% real, $30k savings) **+ conversions**, no side income | **FAILS** (depletes) |
+| Same stress **+ $50k/yr side income** | **survives**, ends +$288k |
+
+The takeaway matches the strategy doc's thesis: income *during the
+sequence-risk window* is worth far more than its face value — a failing stress
+path becomes a surviving one. Two honest limits, by design: (1) any side income
+beyond the year's need is **not** reinvested (conservative — keeps it from
+flattering the plan); (2) it does **not** auto-throttle Roth conversions to
+stay in-bracket — that annual tax-optimization is the §8/CPA question, not
+something a flat-rate model should fake. Tune the tax rate and window with the
+CPA when real numbers exist.
+
+### 3e. SS claim age (`--ss-claim-age`) — longevity hedge, not fragility hedge
+
+The model now scales the Social Security benefit by claim age using the
+standard SSA actuarial rules, applied to the canonical age-67 (FRA) figures
+(so no separately-sourced number is needed per age): **+8%/yr delayed credit
+past FRA, capped at 70 (1.24×); 5/9%/mo then 5/12%/mo early reduction (0.70× at
+62).** Default is 67 (factor 1.0 → baseline untouched). Both spouses claim at
+the same age; the conversion window auto-extends to the claim age.
+
+| Path (retire 55, honest base) | Claim 62 | Claim 67 | Claim 70 |
+|---|--:|--:|--:|
+| Ends at 95 with | $3.18M | $3.43M | **$3.53M** |
+
+**The non-obvious finding:** delaying to 70 helps the base case (+~$104k) but
+does **not** rescue the failing stress path (it still depletes at 88). Reason:
+delaying means three extra years (67–70) of drawing the portfolio with *no* SS,
+which lands exactly when a stress-case portfolio is most fragile and roughly
+cancels the larger later checks. So the backstops sort into two kinds:
+**fragility hedges** that fix a bad-returns decade (the ~$35k/yr side hustle,
+the $12k floor — both rescue the stress case) and **longevity hedges** that pay
+off only with a long life and protect the survivor (delayed SS — does not).
+Caveats: Terri's age-70 benefit is an actuarial estimate (her ssa.gov figure
+isn't on file), and the textbook-optimal move is often to delay only the higher
+earner; the model delays both to one age for simplicity.
+
+### 3f. Savings dials (`--savings-table` + per-vessel knobs) — the year-over-year planning view
+
+The contribution side is now fully parameterized so the annual savings
+conversation is concrete and itemized. Each vessel is its own dial — base
+salary (drives the 401k % and match %), 401k employee %, match %, the bonus
+top-off, Dan's backdoor Roth, Terri's taxable redirect, a Terri **solo-401(k)**
+(deductible), and a Terri **traditional IRA** (non-deductible). `--savings-table`
+prints the year-by-year schedule by vessel + bucket subtotals. **All defaults
+reproduce the prior hardcoded schedule exactly** (~$825k over 8 years: $300.5k
+tax-deferred / $61k Roth / $463k taxable), so the pinned baseline never moved.
+
+The non-deductible IRA gets its own basis-tracked bucket: basis returns
+tax-free, only growth is taxed at the ordinary rate. **The honest limitation,
+documented in the table output:** the model taxes money *only at withdrawal* —
+it does not model the contribution-time deduction, the pro-rata rule, step-up at
+death, or the 10% early penalty. So routing Terri's $8k to a solo-401(k) shows a
+slightly *lower* ending (it's taxed at withdrawal, and the deduction going in
+isn't credited), while routing it to a non-deductible IRA shows a slightly
+*higher* one (basis comes back free, with pro-rata/step-up invisible). Use the
+dials for **allocation and longevity** effects; treat deductible-vs-non-
+deductible tax arbitrage as a CPA question. The real lesson stands: Terri's only
+genuinely-deductible pre-tax route is the solo-401(k) off her consulting income;
+a non-deductible IRA is dominated by taxable once step-up and pro-rata are
+considered.
 
 ## 4. The regression suite (`test_retirement_model.py`)
 
