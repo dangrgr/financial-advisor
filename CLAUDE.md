@@ -90,7 +90,9 @@ Reports are written to `reviews/YYYY-MM-review.md`.
   `test_retirement_model.py` pins every figure the plan docs cite, checks the YAML trajectory
   against the model, and cross-validates the engine against closed-form math. Green = solid ground.
 - Scenario knobs (defaults reproduce the pinned baseline): `--conversions` (honest base case,
-  ~$3.4M not ~$4.0M), `--ss-haircut 0.20`, `--survivor-at AGE`, `--monte-carlo 2000`, `--solve-spend`
+  ~$3.4M not ~$4.0M), `--ss-haircut 0.20`, `--survivor-at AGE`, `--side-income 50000` (gap-year
+  side hustle — pure upside, never depended on; see `preretirement_income_strategy.md`),
+  `--monte-carlo 2000`, `--solve-spend`
 - Audit findings & how to read the Monte Carlo: `MODEL_VALIDATION.md` (Jun 2026)
 - If facts change: update constants, regenerate YAML trajectory, update pinned goldens in the same commit
 

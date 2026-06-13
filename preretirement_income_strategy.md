@@ -146,7 +146,7 @@ The low-risk shape: the build is **free and reversible** through 2031; the only 
 
 ## 8. Open questions to model (projection script + CPA)
 
-1. **Run the projection with ~$50k/yr side income, 2034–2039.** Trade smaller Roth conversions for a longer-lived bridge — what’s the net effect on terminal balance *and* on the age-75 RMD/widow’s-penalty problem? (Hypothesis: a good trade, because sequence risk is *now* and the RMD problem is later.)
+1. **Run the projection with ~$50k/yr side income, 2034–2039.** ✅ *Now runnable:* `python3 retirement_projection.py --side-income 50000` (off by default — the plan never depends on it). First pass: in the base case it extends the bridge a year and lifts the terminal balance ~$1.7M; layered on the stress + conversions case it flips a *failing* path into a surviving one. Still to do with the CPA: the smaller-conversions-vs-longer-bridge tax trade and the age-75 RMD effect (the model offsets draws but does not yet auto-throttle conversions — §5.2).
 1. **Solo 401(k) absorption:** how much post-2034 side income can be sheltered to keep conversions at the top of the 22% bracket rather than spilling into 24%+?
 1. **ACA MAGI:** does the $190k/yr conversion plan already exceed subsidy eligibility, making side-income MAGI impact on ACA effectively moot pre-65? (Hypothesis: yes — confirm.)
 1. **S-corp election breakeven** for SE-tax savings once net income clears ~$50–80k, net of payroll-admin cost.

@@ -20,6 +20,8 @@ Layers:
   4. PROPERTIES       — directional sanity (more return -> retire earlier,
                         more spend -> less ending wealth, draws conserve
                         value, scenario overlays move results the right way).
+  4b. SIDE INCOME     — overlay is pure upside; default-off leaves the pinned
+                        baseline untouched; never load-bearing.
   5. MONTE CARLO      — seeded reproducibility + pinned baseline result.
 """
 
@@ -292,6 +294,78 @@ class TestProperties(unittest.TestCase):
         ok_hi, _, _ = simulate(55, params=Params(spend=ms + 500))
         self.assertTrue(ok_lo)
         self.assertFalse(ok_hi)
+
+
+# ---------------------------------------------------------------------------
+# 4b. SIDE INCOME — overlay must be pure upside, never load-bearing, and the
+#     default (off) must leave every pinned baseline number untouched.
+# ---------------------------------------------------------------------------
+
+class TestSideIncome(unittest.TestCase):
+
+    def test_default_is_off_and_baseline_unchanged(self):
+        # The whole point: factor it if it happens, never depend on it. With
+        # side_income=0 the result must equal the pinned base case exactly.
+        ok, end, _ = simulate(55, params=Params(side_income=0.0))
+        self.assertTrue(ok)
+        self.assertAlmostEqual(end, 4_023_750, delta=TOL)
+
+    def test_side_income_is_pure_upside(self):
+        _, end0, _ = simulate(55, params=Params())
+        _, end1, _ = simulate(55, params=Params(side_income=50_000))
+        self.assertGreater(end1, end0)
+        # §8 Q1 answer, pinned: $50k/yr gross 2034-39 in the base case
+        self.assertAlmostEqual(end1, 5_687_534, delta=TOL)
+
+    def test_more_side_income_never_hurts(self):
+        ends = [simulate(55, params=Params(side_income=s))[1]
+                for s in (0, 25_000, 50_000, 100_000)]
+        self.assertEqual(ends, sorted(ends))
+
+    def test_side_income_extends_the_bridge(self):
+        # Taxable bucket should survive at least as long with side income.
+        def exhaust_age(side):
+            _, _, h = simulate(55, params=Params(side_income=side), record=True)
+            drained = [d for (_, d, _, _, _, _, t) in h if d >= 55 and t < 1]
+            return min(drained)
+        self.assertGreaterEqual(exhaust_age(50_000), exhaust_age(0))
+
+    def test_only_applies_inside_the_window(self):
+        # Income entirely outside the window must change nothing.
+        _, base, _ = simulate(55, params=Params())
+        _, outside, _ = simulate(55, params=Params(
+            side_income=50_000, side_income_start_age=40, side_income_end_age=45))
+        self.assertAlmostEqual(outside, base, delta=TOL)
+
+    def test_net_of_tax_offsets_the_draw_one_for_one(self):
+        # Cross-validation: $X gross at rate r reduces the year's net draw by
+        # exactly X*(1-r) — i.e. side income and an equal net SS inflow are
+        # interchangeable. Build an isolated 1-year-window case and check the
+        # taxable balance moves by net/(1-gains_rate) relative to no income.
+        common = dict(start_tax_deferred=0, start_roth=0, start_taxable=5_000_000,
+                      spend=100_000, health_per_person=0, ss_haircut=1.0,
+                      side_income_start_age=55, side_income_end_age=55)
+        _, _, h0 = simulate(55, params=Params(side_income=0.0, **common), record=True)
+        _, _, h1 = simulate(55, params=Params(side_income=40_000,
+                             side_income_tax_rate=0.25, **common), record=True)
+        tax0 = {d: t for (_, d, _, _, _, _, t) in h0}[55]
+        tax1 = {d: t for (_, d, _, _, _, _, t) in h1}[55]
+        net = 40_000 * 0.75
+        # both grew one year at 5%; the only difference is a smaller draw of
+        # `net` after-tax dollars, i.e. net/(1-gains) fewer shares sold, grown.
+        expected_gap = (net / (1 - 0.075)) * 1.05
+        self.assertAlmostEqual(tax1 - tax0, expected_gap, delta=1.0)
+
+    def test_can_rescue_a_failing_stress_case_but_only_as_upside(self):
+        # The stress+conversions case fails on its own; side income can carry
+        # it — demonstrating value WITHOUT the baseline ever relying on it.
+        stress = Params(conversions=True, real_return=0.04,
+                        taxable_savings=30_000, spend=156_000)
+        ok0, _, _ = simulate(55, params=stress)
+        ok1, end1, _ = simulate(55, params=replace(stress, side_income=50_000))
+        self.assertFalse(ok0)               # plan does NOT depend on side income
+        self.assertTrue(ok1)                # ...but it helps a lot if it happens
+        self.assertGreater(end1, 0)
 
     def test_zero_spend_always_survives(self):
         ok, end, _ = simulate(55, params=Params(spend=0, health_per_person=0))

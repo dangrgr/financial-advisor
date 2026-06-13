@@ -19,6 +19,8 @@ Optional layers (off by default so the pinned baseline never moves):
   --conversions      explicit Roth-conversion tax drag (watchlist item #1)
   --ss-haircut X     benefit cut stress (plan assumption knob, e.g. 0.20)
   --survivor-at AGE  first-death scenario: one SS benefit, single brackets
+  --side-income $    factor (never depend on) gap-year side-hustle income;
+                     offsets bridge draws in the window (default ages 55-60)
   --solve-spend      bisect the max sustainable spend for the given knobs
 """
 
@@ -93,6 +95,20 @@ SURVIVOR_SS_TAX_RATE    = 0.12
 MC_VOL_DEFAULT  = 0.16
 MC_SEED_DEFAULT = 42
 
+# Side-hustle income (used only with --side-income). DELIBERATELY OFF BY
+# DEFAULT: the plan must never DEPEND on a side hustle — this only lets you
+# FACTOR it if it happens. Gross earned income (today's $) during the gap
+# years; the model nets it for taxes and uses it to offset portfolio draws
+# (and any conversion-tax drag) in those years — directly extending the
+# 55-59.5 bridge and hedging sequence-of-returns risk, exactly when it helps
+# most. The default window 55-60 = calendar 2034-2039 (the bridge).
+SIDE_INCOME_START_AGE = 55
+SIDE_INCOME_END_AGE   = 60          # inclusive; Dan 55=2034 ... Dan 60=2039
+SIDE_INCOME_TAX_RATE  = 0.25        # SE tax (~15.3%, half deductible) + modest
+                                    # federal ordinary + CO ~4.4%, blended. A
+                                    # deliberately conservative effective rate;
+                                    # real net is likely higher. Tune w/ CPA.
+
 
 # ---------------------------------------------------------------------------
 # PARAMETERS
@@ -124,6 +140,11 @@ class Params:
     survivor_spend_factor: float = SURVIVOR_SPEND_FACTOR
     survivor_deferred_rate: float = SURVIVOR_DEFERRED_RATE
     survivor_ss_tax_rate: float = SURVIVOR_SS_TAX_RATE
+    # side-hustle income (off by default — pure upside, never depended on)
+    side_income: float = 0.0           # gross earned income/yr in the window
+    side_income_start_age: int = SIDE_INCOME_START_AGE
+    side_income_end_age: int = SIDE_INCOME_END_AGE
+    side_income_tax_rate: float = SIDE_INCOME_TAX_RATE
 
 
 # ---------------------------------------------------------------------------
@@ -224,6 +245,17 @@ def simulate(ret_dan_age, real_return=None, taxable_savings=None, record=False,
                 td -= conv
                 roth += conv
                 net_need += conv * p.conv_tax_rate
+
+            # Side-hustle income (off by default). Net of tax, it offsets the
+            # year's draw — first the conversion-tax drag, then living costs.
+            # Floored at 0: any excess beyond the year's need is NOT modeled as
+            # reinvested (conservative, so the plan never leans on it). This
+            # does NOT auto-throttle conversions to stay in-bracket — that
+            # tax-optimization is the CPA/§8 question, not something a flat-rate
+            # model should fake.
+            if p.side_income and p.side_income_start_age <= dan <= p.side_income_end_age:
+                net_need = max(0.0, net_need -
+                               p.side_income * (1 - p.side_income_tax_rate))
 
             buckets = [
                 {"name": "taxable", "bal": tax,  "net_factor": 1 - p.taxable_gains_rate},
@@ -361,6 +393,15 @@ def main():
     ap.add_argument("--survivor-at", type=int, default=0,
                     help="Dan age at first death; survivor keeps larger SS, "
                          "single brackets, spend x%.2f (default off)" % SURVIVOR_SPEND_FACTOR)
+    ap.add_argument("--side-income", type=float, default=0.0,
+                    help="gross side-hustle income/yr, today's $ (default 0 = "
+                         "not modeled; pure upside, never depended on)")
+    ap.add_argument("--side-income-start", type=int, default=SIDE_INCOME_START_AGE,
+                    help="Dan age side income starts (default 55 = 2034)")
+    ap.add_argument("--side-income-end", type=int, default=SIDE_INCOME_END_AGE,
+                    help="Dan age side income ends, inclusive (default 60 = 2039)")
+    ap.add_argument("--side-income-tax", type=float, default=SIDE_INCOME_TAX_RATE,
+                    help="blended effective tax rate on side income (default 0.25)")
     ap.add_argument("--solve-spend", action="store_true",
                     help="bisect max sustainable annual spend at --retire-age")
     ap.add_argument("--monte-carlo", type=int, default=0, metavar="N",
@@ -375,7 +416,11 @@ def main():
                spend=args.spend, health_per_person=args.health,
                ss_haircut=args.ss_haircut,
                conversions=args.conversions, conv_amount=args.conv_amount,
-               conv_tax_rate=args.conv_tax, survivor_at_dan_age=args.survivor_at)
+               conv_tax_rate=args.conv_tax, survivor_at_dan_age=args.survivor_at,
+               side_income=args.side_income,
+               side_income_start_age=args.side_income_start,
+               side_income_end_age=args.side_income_end,
+               side_income_tax_rate=args.side_income_tax)
 
     start_total = START_TAX_DEFERRED + START_ROTH + START_TAXABLE
     print("=" * 70)
@@ -395,6 +440,9 @@ def main():
     if p.ss_haircut:            extras.append(f"SS haircut {p.ss_haircut:.0%}")
     if p.conversions:           extras.append(f"Roth conversions {fmt(p.conv_amount)}/yr @ {p.conv_tax_rate:.0%}")
     if p.survivor_at_dan_age:   extras.append(f"survivor scenario from Dan age {p.survivor_at_dan_age}")
+    if p.side_income:
+        extras.append(f"side income {fmt(p.side_income)}/yr (Dan {p.side_income_start_age}-"
+                      f"{p.side_income_end_age}) @ {p.side_income_tax_rate:.0%} tax — UPSIDE, not depended on")
     if extras:
         print("Scenario overlays: " + "; ".join(extras))
     print()
@@ -438,6 +486,31 @@ def main():
         s = ("OK " + fmt(end_s)) if ok_s else "FAIL"
         print(f"  ${annual/12:>5,.0f} |  {b:<20} | {s:<20} | {ea}")
     print()
+
+    if p.side_income:
+        # Show the side-income effect as a DELTA against the same plan with no
+        # side income — so it reads as upside, never as load-bearing.
+        no_side = replace(p, side_income=0.0)
+        ok0, end0, h0 = simulate(args.retire_age, params=no_side, record=True)
+        ok1, end1, h1 = simulate(args.retire_age, params=p, record=True)
+        net_yr = p.side_income * (1 - p.side_income_tax_rate)
+
+        def bridge_exhaust_age(hist):
+            drained = [d for (_, d, _, _, _, _, t) in hist
+                       if d >= args.retire_age and t < 1]
+            return min(drained) if drained else None
+
+        ex0, ex1 = bridge_exhaust_age(h0), bridge_exhaust_age(h1)
+        print(f"Side-hustle income effect (retire at Dan {args.retire_age}) — "
+              f"UPSIDE ONLY, the plan does not depend on it:")
+        print(f"  {fmt(p.side_income)}/yr gross, Dan {p.side_income_start_age}-"
+              f"{p.side_income_end_age} → {fmt(net_yr)}/yr net @ "
+              f"{p.side_income_tax_rate:.0%} tax")
+        print(f"  Taxable bridge exhausts: Dan {ex0 or 'never'} (no side income)"
+              f"  →  Dan {ex1 or 'never'} (with)")
+        print(f"  Portfolio at Dan-95: {fmt(end0)} (no side income)  →  "
+              f"{fmt(end1)} (with)   [+{fmt(end1 - end0)}]")
+        print()
 
     if args.solve_spend:
         ms = max_sustainable_spend(args.retire_age, params=p)

@@ -61,6 +61,7 @@ python3 retirement_projection.py                         # unchanged baseline
 python3 retirement_projection.py --conversions           # Roth conversion drag
 python3 retirement_projection.py --ss-haircut 0.20       # SS benefit cut stress
 python3 retirement_projection.py --survivor-at 75        # first-death scenario
+python3 retirement_projection.py --side-income 50000     # gap-year side hustle (upside only)
 python3 retirement_projection.py --solve-spend           # max sustainable spend
 python3 retirement_projection.py --monte-carlo 2000      # sequence-risk probability
 ```
@@ -142,6 +143,31 @@ What it IS telling you, and the two real decisions it sharpens:
 The survivor result partially answers watchlist #4: the plan is robust to a
 first death under these crude assumptions. (Terri's actual SSA estimate is
 still worth pulling — it feeds the non-survivor base case too.)
+
+### 3d. Gap-year side income (`--side-income`) — upside, never load-bearing
+
+Added to *factor* a possible age-55–65 side hustle (see
+`preretirement_income_strategy.md`), explicitly **not** to depend on one — so
+it is off by default and the pinned baseline is untouched. Gross earned income
+in a window (default Dan 55–60 = 2034–2039, the bridge years) is netted for
+tax (default 25% effective: SE tax + modest federal + CO) and used to offset
+that year's portfolio draw — first the conversion-tax drag, then living costs.
+This directly answers strategy-doc §8 Q1.
+
+| Scenario (retire 55, $13k/mo) | Result |
+|---|---|
+| Base case, **$50k/yr** side income 2034–39 | bridge exhausts a year later (Dan 60 vs 59); ends **$5.69M vs $4.02M** (+$1.66M) |
+| Stress (4% real, $30k savings) **+ conversions**, no side income | **FAILS** (depletes) |
+| Same stress **+ $50k/yr side income** | **survives**, ends +$288k |
+
+The takeaway matches the strategy doc's thesis: income *during the
+sequence-risk window* is worth far more than its face value — a failing stress
+path becomes a surviving one. Two honest limits, by design: (1) any side income
+beyond the year's need is **not** reinvested (conservative — keeps it from
+flattering the plan); (2) it does **not** auto-throttle Roth conversions to
+stay in-bracket — that annual tax-optimization is the §8/CPA question, not
+something a flat-rate model should fake. Tune the tax rate and window with the
+CPA when real numbers exist.
 
 ## 4. The regression suite (`test_retirement_model.py`)
 
